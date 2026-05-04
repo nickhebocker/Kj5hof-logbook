@@ -4,7 +4,18 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution: "© OpenStreetMap contributors"
 }).addTo(map);
 
-// Example QSO pin
-L.marker([30.2672, -97.7431])
-  .addTo(map)
-  .bindPopup("Austin, TX<br>20m SSB");
+// Load QSOs from JSON
+fetch("logbook.json")
+  .then(response => response.json())
+  .then(logbook => {
+    logbook.forEach(qso => {
+      L.marker([qso.lat, qso.lon])
+        .addTo(map)
+        .bindPopup(
+          `<strong>${qso.call}</strong><br>
+           ${qso.band} ${qso.mode}<br>
+           ${qso.note}`
+        );
+    });
+  })
+  .catch(err => console.error("Failed to load logbook:", err));
