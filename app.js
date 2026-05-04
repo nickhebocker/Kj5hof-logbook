@@ -60,10 +60,11 @@ function render() {
   });
 }
 
-// ---------------- THE SMART SAVE (FIXED ERROR REPORTING) ----------------
+// ---------------- THE SEARCH ENGINE ----------------
 document.getElementById("saveQSO").onclick = async function() {
   const btn = this;
-  const call = document.getElementById("call").value.trim().toUpperCase();
+  const callInput = document.getElementById("call");
+  const call = callInput.value.trim().toUpperCase();
   const latF = document.getElementById("lat"), lonF = document.getElementById("lon"), gridF = document.getElementById("grid");
 
   if (!call) return alert("Enter Callsign");
@@ -72,64 +73,65 @@ document.getElementById("saveQSO").onclick = async function() {
     btn.textContent = "Searching...";
     btn.disabled = true;
 
+    let data = null;
+    let errorLog = "";
+
+    // TRY 1: Direct Fetch (Fastest, works if Callook allows CORS)
     try {
-      // Trying a different proxy that is less likely to be blocked on mobile data
-      const target = `https://callook.info/${call}/json`;
-      const proxy = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(target)}`;
-      
-      const r = await fetch(proxy);
-      if (!r.ok) throw new Error(`Server returned HTTP ${r.status}`);
-      
-      const data = await r.json();
+      const r = await fetch(`https://callook.info/${call}/json`);
+      if (r.ok) data = await r.json();
+    } catch (e) { errorLog += "Direct: Blocked. "; }
 
-      if (data && data.status === "VALID") {
-        // CASE: Coordinates missing (The Apartment Problem)
-        if (!data.location.latitude || data.location.latitude === "") {
-          const rawAddr = `${data.address.line1}, ${data.address.line2}`;
-          
-          let fixedAddr = data.address.line1.replace(/(APPT|APT|UNIT|STE|SUITE|#).*$/i, "").trim();
-          fixedAddr = `${fixedAddr}, ${data.address.line2}`;
+    // TRY 2: Backup Proxy (Codetabs)
+    if (!data) {
+      try {
+        const r = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent('https://callook.info/'+call+'/json')}`);
+        if (r.ok) data = await r.json();
+      } catch (e) { errorLog += "Proxy: Failed. "; }
+    }
 
-          const userChoice = prompt(
-            `Callsign found, but map coordinates are missing.\n\n` +
-            `Original: ${rawAddr}\n` +
-            `Fixed: ${fixedAddr}\n\n` +
-            `Press OK to use the FIXED address for the map, or edit it below:`, 
-            fixedAddr
-          );
+    if (data && data.status === "VALID") {
+      // IF WE HAVE DATA BUT NO COORDINATES (The Apt # Issue)
+      if (!data.location.latitude || data.location.latitude === "") {
+        const rawAddr = `${data.address.line1}, ${data.address.line2}`;
+        let fixedAddr = data.address.line1.replace(/(APPT|APT|UNIT|STE|SUITE|#).*$/i, "").trim();
+        fixedAddr = `${fixedAddr}, ${data.address.line2}`;
 
-          if (userChoice) {
-            btn.textContent = "Locating...";
+        const userChoice = prompt(
+          `Callsign found, but map coordinates are missing.\n\n` +
+          `Original: ${rawAddr}\n` +
+          `Fixed: ${fixedAddr}\n\n` +
+          `Press OK to generate coordinates from the FIXED address:`, 
+          fixedAddr
+        );
+
+        if (userChoice) {
+          btn.textContent = "Locating House...";
+          try {
             const geoTarget = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(userChoice)}`;
             const geoResp = await fetch(geoTarget);
             const geoData = await geoResp.json();
-
             if (geoData && geoData.length > 0) {
               const res = geoData[0];
               latF.value = parseFloat(res.lat).toFixed(4);
               lonF.value = parseFloat(res.lon).toFixed(4);
               gridF.value = latLonToGrid(res.lat, res.lon);
-              
-              btn.textContent = "Verify & Save";
+              btn.textContent = "Confirm & Save";
               btn.style.background = "#28a745";
-            } else {
-              throw new Error("Map service could not find that specific address.");
             }
-          }
-        } else {
-          // Standard case: Data already had cords
-          latF.value = data.location.latitude;
-          lonF.value = data.location.longitude;
-          gridF.value = data.location.gridsquare;
-          btn.textContent = "Confirm & Save";
-          btn.style.background = "#28a745";
+          } catch (e) { alert("Map lookup failed. Entering manual mode."); }
         }
       } else {
-        throw new Error("Callsign not found in FCC database.");
+        // Standard Case: Data was perfect
+        latF.value = data.location.latitude;
+        lonF.value = data.location.longitude;
+        gridF.value = data.location.gridsquare;
+        btn.textContent = "Confirm & Save";
+        btn.style.background = "#28a745";
       }
-    } catch (e) { 
-      // THIS NOW SHOWS THE REAL REASON
-      alert("Search Failed!\n\nReason: " + e.message + "\n\nYou can still enter details manually and hit Save.");
+    } else {
+      // FINAL FAILURE: Show why
+      alert(`Search Failed!\n\n${errorLog}\n\nReason: Your mobile carrier or browser is shielding the connection. Please fill Lat/Lon/Grid manually this once!`);
       btn.textContent = "Save Anyway";
       btn.style.background = "#6c757d";
     }
@@ -145,13 +147,12 @@ document.getElementById("saveQSO").onclick = async function() {
     band: document.getElementById("band").value.trim(), mode: document.getElementById("mode").value.trim(), grid: gridF.value.trim()
   };
   if (selectedId) qso.id = selectedId;
-
   const tx = db.transaction("qsos", "readwrite");
   tx.objectStore("qsos").put(qso);
   tx.oncomplete = () => { resetForm(); loadAll(); };
 };
 
-// --- HELPER: Grid Calculation ---
+// --- HELPER: Grid Calc ---
 function latLonToGrid(lat, lon) {
   lat = parseFloat(lat) + 90;
   lon = parseFloat(lon) + 180;
