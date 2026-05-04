@@ -1,72 +1,146 @@
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { 
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-    background-color: #f0f2f5; 
-    color: #1c1e21;
-    line-height: 1.4;
+/* Base Styles from your Original Design */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #2c3e50;
+    color: #ecf0f1;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
 }
-.wrapper { max-width: 500px; margin: 0 auto; padding: 15px; }
 
-header { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    margin-bottom: 20px; 
+.container {
+    background-color: #34495e;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    width: 90%;
+    max-width: 1200px;
+    backdrop-filter: blur(10px);
 }
-h1 { font-size: 1.5rem; color: #1877f2; }
-#connection-status { font-size: 0.75rem; font-weight: bold; padding: 4px 8px; border-radius: 12px; }
-.online { background: #e7f3ff; color: #1877f2; }
-.offline { background: #ffebe8; color: #f02849; }
 
-form { 
-    background: #fff; 
-    padding: 15px; 
-    border-radius: 8px; 
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
-    display: flex; 
-    flex-direction: column; 
-    gap: 12px;
+header {
+    text-align: center;
+    margin-bottom: 30px;
 }
-.form-row { display: flex; gap: 10px; }
-.form-row input, .form-row select { flex: 1; }
 
-input, select, textarea {
+h1 {
+    margin: 0;
+    font-size: 2.5em;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+/* Layout for Map and Form */
+.main-content {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 30px;
+}
+
+#map {
+    height: 400px;
+    border-radius: 10px;
+    border: 2px solid #16a085;
+}
+
+/* Form Styling */
+form {
+    display: flex;
+    flex-direction: column;
+}
+
+input, textarea, select {
+    background-color: #2c3e50;
+    border: 1px solid #16a085;
+    color: #ecf0f1;
     padding: 12px;
-    border: 1px solid #dddfe2;
-    border-radius: 6px;
-    font-size: 16px; /* Prevents iOS zoom on focus */
+    margin-bottom: 15px;
+    border-radius: 5px;
+    font-size: 1em;
 }
-textarea { resize: none; width: 100%; }
+
+.rst-row {
+    display: flex;
+    gap: 10px;
+}
+
+.rst-row input {
+    flex: 1;
+}
 
 button {
-    background-color: #1877f2;
-    color: #fff;
-    border: none;
+    background-color: #16a085;
+    color: white;
     padding: 15px;
-    font-size: 16px;
-    font-weight: bold;
-    border-radius: 6px;
+    border: none;
+    border-radius: 5px;
     cursor: pointer;
+    font-size: 1.1em;
+    transition: background 0.3s ease;
 }
-button:active { opacity: 0.8; }
 
-h2 { font-size: 1.1rem; margin: 20px 0 10px; color: #65676b; }
+button:hover {
+    background-color: #1abc9c;
+}
 
-.log-card {
-    background: white;
-    padding: 12px;
-    border-radius: 8px;
+/* Log Entries Styling (Enhanced for Syncing) */
+.log-entries-container {
+    margin-top: 30px;
+}
+
+#log-entries {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-top: 15px;
+}
+
+.log-item {
+    background-color: #2c3e50;
+    padding: 15px;
     margin-bottom: 10px;
-    border-left: 5px solid #bdc1c6;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    border-left: 5px solid #bdc3c7; /* Default Gray */
+    position: relative;
+    transition: transform 0.2s;
 }
-.log-card.synced { border-left-color: #42b72a; }
-.log-card.pending { border-left-color: #f7b928; }
 
-.card-top { display: flex; justify-content: space-between; align-items: center; }
-.card-call { font-weight: bold; font-size: 1.2rem; }
-.card-mode { color: #65676b; font-size: 0.9rem; }
-.card-rst { font-family: monospace; margin: 4px 0; font-size: 0.9rem; }
-.card-notes { font-size: 0.9rem; color: #1c1e21; margin-bottom: 5px; }
-.card-time { font-size: 0.7rem; color: #8a8d91; text-align: right; }
-.empty-msg { text-align: center; color: #8a8d91; margin-top: 20px; }
+/* Added for Hybrid Sync Logic */
+.log-item.synced {
+    border-left-color: #2ecc71; /* Green for Firebase */
+}
+
+.log-item.pending {
+    border-left-color: #f1c40f; /* Yellow for Local Only */
+}
+
+.sync-indicator {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 1.2em;
+}
+
+/* Status Bar */
+#connection-status {
+    font-size: 0.9em;
+    margin-top: 5px;
+    font-style: italic;
+}
+
+/* Mobile Responsiveness from your Commit */
+@media (max-width: 768px) {
+    .main-content {
+        grid-template-columns: 1fr;
+    }
+    
+    #map {
+        height: 300px;
+        order: -1; /* Puts map on top for mobile */
+    }
+    
+    .container {
+        padding: 15px;
+    }
+}
