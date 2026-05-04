@@ -72,7 +72,7 @@ document.getElementById("saveQSO").onclick = async function() {
   if (!latF.value && !lookupAttempted && !selectedId) {
     this.textContent = "Searching...";
     try {
-      const proxy = "https://api.allorigins.win/get?url=";
+      const proxy = "https://corsproxy.io/?";
       const target = encodeURIComponent(`https://hamdb.org/api/${call}/json/KJ5HOF`);
       
       const r = await fetch(proxy + target);
