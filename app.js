@@ -2,6 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebas
 import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
+// --- FIREBASE CONFIGURATION ---
 const firebaseConfig = {
     apiKey: "AIzaSyCuPlkWdIBTGsmpEQdmy0wTqrVJadL29kE",
     authDomain: "logbook-75575.firebaseapp.com",
@@ -15,34 +16,66 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// --- AUTHENTICATION LOGIC ---
+// --- MAP INITIALIZATION ---
+const map = L.map('map').setView([31.9686, -99.9018], 6); 
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+// --- LOGIN POP-UP ERROR HANDLING ---
+const loginBtn = document.getElementById('login-btn');
 const loginOverlay = document.getElementById('login-overlay');
 const appContainer = document.getElementById('app-container');
 
+// Monitor Auth State
 onAuthStateChanged(auth, (user) => {
     if (user) {
         loginOverlay.style.display = 'none';
         appContainer.style.display = 'block';
-        renderLogs();
-        map.invalidateSize(); // Fixes Leaflet sizing after reveal
+        setTimeout(() => map.invalidateSize(), 400); // Fixes map on reveal
     } else {
         loginOverlay.style.display = 'flex';
         appContainer.style.display = 'none';
     }
 });
 
-document.getElementById('login-btn').addEventListener('click', () => {
+// Login Execution with Mobile Pop-up Errors
+loginBtn.addEventListener('click', async () => {
     const email = document.getElementById('login-email').value;
     const pass = document.getElementById('login-pass').value;
-    signInWithEmailAndPassword(auth, email, pass).catch(err => alert("Login failed: " + err.message));
+
+    if (!email || !pass) {
+        alert("Please enter both email and password.");
+        return;
+    }
+
+    try {
+        await signInWithEmailAndPassword(auth, email, pass);
+    } catch (error) {
+        // This creates the pop-up error on your mobile screen
+        console.error("Login failed:", error.code);
+        
+        switch (error.code) {
+            case 'auth/invalid-credential':
+                alert("Error: Invalid email or password. Please try again.");
+                break;
+            case 'auth/user-not-found':
+                alert("Error: No account found with this email.");
+                break;
+            case 'auth/wrong-password':
+                alert("Error: Incorrect password.");
+                break;
+            case 'auth/network-request-failed':
+                alert("Error: Network issue. Check your connection.");
+                break;
+            default:
+                alert("Login Error: " + error.message);
+        }
+    }
 });
 
+// Logout logic
 document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
-// --- EXISTING LOGIC ---
-const map = L.map('map').setView([31.9686, -99.9018], 6); 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-
+// --- EXISTING LOGGING LOGIC ---
 const LOCAL_STORAGE_KEY = 'kj5hof_logs';
 
 function getLocalLogs() {
@@ -56,18 +89,14 @@ function renderLogs() {
         <div class="log-item">
             <strong>${log.callsign}</strong> - ${log.frequency}MHz (${log.mode})<br>
             <small>${new Date(log.timestamp).toLocaleString()}</small>
-            <p>${log.notes}</p>
         </div>
     `).join('');
 }
 
 document.getElementById('log-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!auth.currentUser) return alert("Must be logged in to save.");
-
     const entry = {
         id: Date.now(),
-        uid: auth.currentUser.uid, // Tie log to your user
         timestamp: new Date().toISOString(),
         callsign: document.getElementById('callsign').value.toUpperCase(),
         frequency: document.getElementById('frequency').value,
@@ -82,13 +111,18 @@ document.getElementById('log-form').addEventListener('submit', async (e) => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(logs));
     renderLogs();
 
-    if (navigator.onLine) {
+    if (navigator.onLine && auth.currentUser) {
         try {
-            await addDoc(collection(db, "logs"), { ...entry, createdAt: serverTimestamp() });
-        } catch (err) { console.error("Firebase Error", err); }
+            await addDoc(collection(db, "logs"), { 
+                ...entry, 
+                uid: auth.currentUser.uid, 
+                createdAt: serverTimestamp() 
+            });
+        } catch (err) {
+            console.error("Cloud Sync Failed", err);
+        }
     }
     e.target.reset();
 });
 
-window.addEventListener('online', () => document.getElementById('connection-status').innerText = "Online");
-window.addEventListener('offline', () => document.getElementById('connection-status').innerText = "Offline");
+renderLogs();
