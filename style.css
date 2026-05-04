@@ -1,32 +1,72 @@
-:root {
-  --bg: #ffffff; --fg: #212529; --panel: #f8f9fa; --border: #dee2e6; --accent: #007bff;
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+    background-color: #f0f2f5; 
+    color: #1c1e21;
+    line-height: 1.4;
 }
-body.dark {
-  --bg: #121212; --fg: #e9ecef; --panel: #2b3035; --border: #495057; --accent: #375a7f;
+.wrapper { max-width: 500px; margin: 0 auto; padding: 15px; }
+
+header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 20px; 
 }
+h1 { font-size: 1.5rem; color: #1877f2; }
+#connection-status { font-size: 0.75rem; font-weight: bold; padding: 4px 8px; border-radius: 12px; }
+.online { background: #e7f3ff; color: #1877f2; }
+.offline { background: #ffebe8; color: #f02849; }
 
-* { box-sizing: border-box; }
-body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--fg); margin: 0; padding: 10px; overflow-x: hidden; }
+form { 
+    background: #fff; 
+    padding: 15px; 
+    border-radius: 8px; 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+    display: flex; 
+    flex-direction: column; 
+    gap: 12px;
+}
+.form-row { display: flex; gap: 10px; }
+.form-row input, .form-row select { flex: 1; }
 
-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-#map { height: 40vh; width: 100%; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 10px; z-index: 1; }
+input, select, textarea {
+    padding: 12px;
+    border: 1px solid #dddfe2;
+    border-radius: 6px;
+    font-size: 16px; /* Prevents iOS zoom on focus */
+}
+textarea { resize: none; width: 100%; }
 
-#editor { background: var(--panel); padding: 12px; border-radius: 10px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; }
-.row { display: flex; gap: 8px; width: 100%; }
-.row input { flex: 1; min-width: 0; }
-input { padding: 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); font-size: 16px; }
+button {
+    background-color: #1877f2;
+    color: #fff;
+    border: none;
+    padding: 15px;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+}
+button:active { opacity: 0.8; }
 
-.actions, .log-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
-button { padding: 14px; border-radius: 6px; border: none; background: var(--accent); color: white; font-weight: bold; font-size: 16px; cursor: pointer; }
+h2 { font-size: 1.1rem; margin: 20px 0 10px; color: #65676b; }
 
-#logbook-view { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 1000; padding: 15px; overflow-y: auto; }
-.view-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-.table-container { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 15px; }
+.log-card {
+    background: white;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    border-left: 5px solid #bdc1c6;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+.log-card.synced { border-left-color: #42b72a; }
+.log-card.pending { border-left-color: #f7b928; }
 
-table { width: 100%; border-collapse: collapse; background: var(--bg); font-size: 14px; }
-th, td { padding: 12px; border: 1px solid var(--border); text-align: left; white-space: nowrap; }
-th { background: var(--panel); position: sticky; top: 0; z-index: 2; }
-tbody tr:active { background: var(--accent); color: white; }
-
-#backToMap { width: auto; padding: 8px 15px; background: #6c757d; }
- 
+.card-top { display: flex; justify-content: space-between; align-items: center; }
+.card-call { font-weight: bold; font-size: 1.2rem; }
+.card-mode { color: #65676b; font-size: 0.9rem; }
+.card-rst { font-family: monospace; margin: 4px 0; font-size: 0.9rem; }
+.card-notes { font-size: 0.9rem; color: #1c1e21; margin-bottom: 5px; }
+.card-time { font-size: 0.7rem; color: #8a8d91; text-align: right; }
+.empty-msg { text-align: center; color: #8a8d91; margin-top: 20px; }
