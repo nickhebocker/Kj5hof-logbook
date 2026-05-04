@@ -62,7 +62,7 @@ function render() {
   });
 }
 
-// ---------------- 4. SAVE & LOOKUP (WITH ERROR REPORTING) ----------------
+// ---------------- 4. SAVE & LOOKUP (CORRECTED FOR CORSPROXY) ----------------
 document.getElementById("saveQSO").onclick = async function() {
   const call = document.getElementById("call").value.trim().toUpperCase();
   const latF = document.getElementById("lat"), lonF = document.getElementById("lon"), gridF = document.getElementById("grid");
@@ -72,16 +72,15 @@ document.getElementById("saveQSO").onclick = async function() {
   if (!latF.value && !lookupAttempted && !selectedId) {
     this.textContent = "Searching...";
     try {
-      const proxy = "https://corsproxy.io/?";
-      const target = encodeURIComponent(`https://hamdb.org/api/${call}/json/KJ5HOF`);
+      // NEW PROXY SYNTAX (corsproxy.io)
+      const target = `https://hamdb.org/api/${call}/json/KJ5HOF`;
+      const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(target)}`;
       
-      const r = await fetch(proxy + target);
-      if (!r.ok) throw new Error(`HTTP Status ${r.status}`);
+      const r = await fetch(proxyUrl);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
       
-      const j = await r.json(); 
-      if (!j.contents) throw new Error("Proxy returned empty content.");
-      
-      const d = JSON.parse(j.contents);
+      // corsproxy.io returns the data directly, no .contents wrapper needed
+      const d = await r.json(); 
 
       if (d.hamdb && d.hamdb.callsign) {
         const i = d.hamdb.callsign;
@@ -91,13 +90,12 @@ document.getElementById("saveQSO").onclick = async function() {
         this.textContent = "Confirm & Save";
         this.style.background = "#28a745";
       } else {
-        alert("Not Found: Callsign not in HamDB (US/CA/AU only).");
+        alert("Callsign not found in HamDB.");
         this.textContent = "Manual Save";
         this.style.background = "#fd7e14";
       }
     } catch (e) { 
-      // --- POPUP ERROR LOGGING ---
-      alert("Lookup Failed!\nReason: " + e.message + "\n\nNote: If using GitHub Pages, this is often a CORS or Proxy delay. You can still enter details manually.");
+      alert("Lookup Failed!\n\nReason: " + e.message + "\n\nTip: If it says 'Failed to fetch', try turning off your Ad-blocker or VPN. You can still save manually!");
       this.textContent = "Save Anyway"; 
     }
     lookupAttempted = true; 
@@ -156,7 +154,8 @@ document.getElementById("restoreInput").onchange = e => {
   reader.onload = () => {
     const data = JSON.parse(reader.result);
     const tx = db.transaction("qsos", "readwrite");
-    data.forEach(q => { delete q.id; tx.objectStore("qsos").add(q); });
+    const store = tx.objectStore("qsos");
+    data.forEach(q => { delete q.id; store.add(q); });
     tx.oncomplete = loadAll;
   };
   reader.readAsText(e.target.files[0]);
