@@ -1,103 +1,73 @@
-let logbookData = JSON.parse(localStorage.getItem('kj5hof_logs')) || [];
-let editingIndex = -1;
+// Configuration - Change these to your desired credentials
+const OWNER_USER = "admin";
+const OWNER_PASS = "logbook123";
 
-const logForm = document.getElementById('logForm');
-const logTableBody = document.querySelector('#logTable tbody');
-const modal = document.getElementById('logbookModal');
+// Element Selectors
+const loginContainer = document.getElementById('login-container');
+const mainContent = document.getElementById('main-content');
+const loginBtn = document.getElementById('login-btn');
+const logoutBtn = document.getElementById('logout-btn');
+const errorMessage = document.getElementById('error-message');
 
-// Initialize view
-updateTable();
+const usernameInput = document.getElementById('username');
+const passwordInput = document.getElementById('password');
+const logBody = document.getElementById('log-body');
 
-// Handle Form Submission (Add or Update)
-logForm.addEventListener('submit', function(e) {
-    e.preventDefault();
+// 1. Login Functionality
+loginBtn.addEventListener('click', () => {
+    const user = usernameInput.value;
+    const pass = passwordInput.value;
 
-    const newEntry = {
-        date: document.getElementById('date').value,
-        time: document.getElementById('time').value,
-        callsign: document.getElementById('callsign').value.toUpperCase(),
-        frequency: document.getElementById('frequency').value,
-        mode: document.getElementById('mode').value,
-        rstSent: document.getElementById('rstSent').value,
-        rstRcvd: document.getElementById('rstRcvd').value,
-        notes: document.getElementById('notes').value
-    };
-
-    if (editingIndex === -1) {
-        // Add new
-        logbookData.push(newEntry);
+    if (user === OWNER_USER && pass === OWNER_PASS) {
+        // Success
+        errorMessage.style.display = 'none';
+        loginContainer.style.display = 'none';
+        mainContent.style.display = 'block';
+        loadLogData();
     } else {
-        // Update existing
-        logbookData[editingIndex] = newEntry;
-        editingIndex = -1;
-        document.getElementById('submitBtn').innerText = 'Save Contact';
+        // Failure
+        errorMessage.style.display = 'block';
+        passwordInput.value = ""; // Clear password field on fail
     }
-
-    saveAndRefresh();
-    logForm.reset();
 });
 
-function saveAndRefresh() {
-    localStorage.setItem('kj5hof_logs', JSON.stringify(logbookData));
-    updateTable();
+// 2. Logout Functionality
+logoutBtn.addEventListener('click', () => {
+    mainContent.style.display = 'none';
+    loginContainer.style.display = 'block';
+    usernameInput.value = "";
+    passwordInput.value = "";
+});
+
+// 3. Data Fetching
+function loadLogData() {
+    fetch('logbook.json')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Could not fetch logbook.json");
+            }
+            return response.json();
+        })
+        .then(data => {
+            renderLogs(data);
+        })
+        .catch(error => {
+            console.error("Error loading logs:", error);
+            logBody.innerHTML = "<tr><td colspan='4'>Error loading data.</td></tr>";
+        });
 }
 
-function updateTable() {
-    logTableBody.innerHTML = '';
-    
-    logbookData.forEach((log, index) => {
+// 4. Render Data to Table
+function renderLogs(logs) {
+    logBody.innerHTML = ""; // Clear existing
+    logs.forEach(entry => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${log.date}</td>
-            <td>${log.time}</td>
-            <td>${log.callsign}</td>
-            <td>${log.frequency}</td>
-            <td>${log.mode}</td>
-            <td>${log.rstSent}</td>
-            <td>${log.rstRcvd}</td>
-            <td>${log.notes}</td>
-            <td>
-                <button class="edit-btn" onclick="editEntry(${index})">Edit</button>
-            </td>
+            <td>${entry.date || 'N/A'}</td>
+            <td>${entry.callsign || 'N/A'}</td>
+            <td>${entry.frequency || 'N/A'}</td>
+            <td>${entry.mode || 'N/A'}</td>
         `;
-        logTableBody.appendChild(row);
+        logBody.appendChild(row);
     });
 }
-
-function editEntry(index) {
-    const log = logbookData[index];
-    
-    // Fill form with existing data
-    document.getElementById('date').value = log.date;
-    document.getElementById('time').value = log.time;
-    document.getElementById('callsign').value = log.callsign;
-    document.getElementById('frequency').value = log.frequency;
-    document.getElementById('mode').value = log.mode;
-    document.getElementById('rstSent').value = log.rstSent;
-    document.getElementById('rstRcvd').value = log.rstRcvd;
-    document.getElementById('notes').value = log.notes;
-
-    // Set state to editing
-    editingIndex = index;
-    document.getElementById('submitBtn').innerText = 'Update Entry';
-    
-    // Close modal if it was open
-    closeModal();
-    window.scrollTo(0, 0);
-}
-
-function openModal() {
-    modal.style.display = 'block';
-    updateTable();
-}
-
-function closeModal() {
-    modal.style.display = 'none';
-}
-
-// Close modal if user clicks outside of it
-window.onclick = function(event) {
-    if (event.target == modal) {
-        closeModal();
-    }
-};
