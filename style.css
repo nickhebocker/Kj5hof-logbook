@@ -1,17 +1,56 @@
 :root {
-  --bg: #ffffff; --fg: #333; --panel: #f8f9fa; --accent: #007bff; --border: #dee2e6;
+  --bg: #ffffff; --fg: #333; --panel: #f1f3f5; --accent: #2a6fdb; --border: #ced4da;
 }
 body.dark {
-  --bg: #121212; --fg: #e0e0e0; --panel: #1e1e1e; --accent: #375a7f; --border: #444;
+  --bg: #121212; --fg: #f8f9fa; --panel: #212529; --accent: #4dabf7; --border: #495057;
 }
-body { font-family: sans-serif; background: var(--bg); color: var(--fg); margin: 0; padding: 15px; }
-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-section { background: var(--panel); padding: 12px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border); }
-input, select, button { padding: 8px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); margin: 4px; }
-button { cursor: pointer; background: var(--accent); color: white; border: none; font-weight: bold; }
-button:hover { opacity: 0.8; }
-.file-label { font-size: 0.8rem; cursor: pointer; }
-#map { height: 60vh; width: 100%; border-radius: 8px; margin-top: 10px; border: 2px solid var(--border); }
-.input-group { display: flex; flex-wrap: wrap; }
-.input-group input { flex: 1; min-width: 120px; }
-@media (max-width: 600px) { #map { height: 40vh; } .input-group input { width: 100%; } }
+
+body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--fg); margin: 0; padding: 10px; line-height: 1.5; }
+
+/* Vertically stack inputs on mobile */
+#editor {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 15px;
+}
+
+#editor input {
+  width: 100%;
+  padding: 12px; /* Bigger touch area */
+  font-size: 16px; /* Prevents iOS auto-zoom on focus */
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+/* Make Call and Save buttons span full width */
+#call, #saveQSO, #deleteQSO {
+  grid-column: span 2;
+}
+
+button {
+  padding: 14px;
+  font-size: 16px;
+  font-weight: bold;
+  border-radius: 6px;
+  border: none;
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+button:active { transform: scale(0.98); }
+
+#map {
+  height: 50vh;
+  margin-top: 15px;
+  border-radius: 8px;
+  z-index: 1;
+}
+
+header { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
+.toggles { display: flex; gap: 5px; overflow-x: auto; }
+#stats { font-weight: bold; padding: 5px; }
