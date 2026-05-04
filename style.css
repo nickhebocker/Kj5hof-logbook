@@ -1,139 +1,17 @@
-/* style.css – fully updated, no placeholders */
-
-/* ---------------- ROOT VARIABLES ---------------- */
 :root {
-  --bg: #ffffff;
-  --fg: #000000;
-  --panel: #f4f4f4;
-  --accent: #2a6fdb;
-  --border: #ccc;
+  --bg: #ffffff; --fg: #333; --panel: #f8f9fa; --accent: #007bff; --border: #dee2e6;
 }
-
 body.dark {
-  --bg: #121212;
-  --fg: #e0e0e0;
-  --panel: #1e1e1e;
-  --accent: #4ea1ff;
-  --border: #333;
+  --bg: #121212; --fg: #e0e0e0; --panel: #1e1e1e; --accent: #375a7f; --border: #444;
 }
-
-/* ---------------- GLOBAL ---------------- */
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  padding: 10px;
-  background: var(--bg);
-  color: var(--fg);
-  font-family: Arial, sans-serif;
-}
-
-/* ---------------- HEADER ---------------- */
-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
-header h1 {
-  margin: 0;
-  font-size: 1.4rem;
-}
-
-.toggles {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-/* ---------------- PANELS ---------------- */
-section {
-  background: var(--panel);
-  padding: 8px;
-  border-radius: 6px;
-  margin-bottom: 8px;
-}
-
-/* ---------------- FORMS ---------------- */
-input,
-select,
-button {
-  padding: 8px;
-  margin: 4px 2px;
-  font-size: 1rem;
-  border-radius: 4px;
-  border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--fg);
-}
-
-button {
-  cursor: pointer;
-  background: var(--accent);
-  color: #fff;
-  border: none;
-}
-
-button:hover {
-  opacity: 0.9;
-}
-
-input[type="file"] {
-  background: none;
-  color: var(--fg);
-}
-
-/* ---------------- CONTROLS ---------------- */
-#controls,
-#editor,
-#io {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-/* ---------------- STATS ---------------- */
-#stats {
-  font-weight: bold;
-}
-
-/* ---------------- MAP ---------------- */
-#map {
-  width: 100%;
-  height: 70vh;
-  min-height: 300px;
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-/* ---------------- MOBILE REFINEMENTS ---------------- */
-@media (max-width: 600px) {
-  header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  #map {
-    height: 55vh;
-  }
-
-  input,
-  select,
-  button {
-    width: 100%;
-  }
-
-  .toggles {
-    width: 100%;
-  }
-}
-
-/* ---------------- DARK MODE MAP FIX ---------------- */
-body.dark .leaflet-container {
-  background: #000;
-}
+body { font-family: sans-serif; background: var(--bg); color: var(--fg); margin: 0; padding: 15px; }
+header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+section { background: var(--panel); padding: 12px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border); }
+input, select, button { padding: 8px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); margin: 4px; }
+button { cursor: pointer; background: var(--accent); color: white; border: none; font-weight: bold; }
+button:hover { opacity: 0.8; }
+.file-label { font-size: 0.8rem; cursor: pointer; }
+#map { height: 60vh; width: 100%; border-radius: 8px; margin-top: 10px; border: 2px solid var(--border); }
+.input-group { display: flex; flex-wrap: wrap; }
+.input-group input { flex: 1; min-width: 120px; }
+@media (max-width: 600px) { #map { height: 40vh; } .input-group input { width: 100%; } }
