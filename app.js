@@ -4,61 +4,77 @@ let editingIndex = -1;
 const logForm = document.getElementById('logForm');
 const logTableBody = document.querySelector('#logTable tbody');
 const modal = document.getElementById('logbookModal');
+const submitBtn = document.getElementById('submitBtn');
 
-// Initialize view
+// Initialize
 updateTable();
 
-// Handle Form Submission (Add or Update)
+// Handle Form Submission
 logForm.addEventListener('submit', function(e) {
     e.preventDefault();
 
-    const newEntry = {
+    const entry = {
         date: document.getElementById('date').value,
-        time: document.getElementById('time').value,
+        timeOn: document.getElementById('timeOn').value,
+        timeOff: document.getElementById('timeOff').value,
         callsign: document.getElementById('callsign').value.toUpperCase(),
-        frequency: document.getElementById('frequency').value,
+        name: document.getElementById('name').value,
+        freq: document.getElementById('freq').value,
+        band: document.getElementById('band').value,
         mode: document.getElementById('mode').value,
         rstSent: document.getElementById('rstSent').value,
         rstRcvd: document.getElementById('rstRcvd').value,
-        notes: document.getElementById('notes').value
+        power: document.getElementById('power').value,
+        location: document.getElementById('location').value,
+        state: document.getElementById('state').value,
+        country: document.getElementById('country').value,
+        gridsquare: document.getElementById('gridsquare').value,
+        comment: document.getElementById('comment').value
     };
 
     if (editingIndex === -1) {
-        // Add new
-        logbookData.push(newEntry);
+        logbookData.unshift(entry); // New entries at top
     } else {
-        // Update existing
-        logbookData[editingIndex] = newEntry;
+        logbookData[editingIndex] = entry;
         editingIndex = -1;
-        document.getElementById('submitBtn').innerText = 'Save Contact';
+        submitBtn.innerText = 'Save Contact';
+        submitBtn.style.backgroundColor = '#28a745';
     }
 
-    saveAndRefresh();
+    saveData();
     logForm.reset();
 });
 
-function saveAndRefresh() {
+function saveData() {
     localStorage.setItem('kj5hof_logs', JSON.stringify(logbookData));
     updateTable();
 }
 
 function updateTable() {
+    if (!logTableBody) return;
     logTableBody.innerHTML = '';
     
     logbookData.forEach((log, index) => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${log.date}</td>
-            <td>${log.time}</td>
-            <td>${log.callsign}</td>
-            <td>${log.frequency}</td>
-            <td>${log.mode}</td>
-            <td>${log.rstSent}</td>
-            <td>${log.rstRcvd}</td>
-            <td>${log.notes}</td>
             <td>
                 <button class="edit-btn" onclick="editEntry(${index})">Edit</button>
             </td>
+            <td>${log.date}</td>
+            <td>${log.timeOn}</td>
+            <td>${log.callsign}</td>
+            <td>${log.name}</td>
+            <td>${log.freq}</td>
+            <td>${log.band}</td>
+            <td>${log.mode}</td>
+            <td>${log.rstSent}</td>
+            <td>${log.rstRcvd}</td>
+            <td>${log.power}</td>
+            <td>${log.location}</td>
+            <td>${log.state}</td>
+            <td>${log.country}</td>
+            <td>${log.gridsquare}</td>
+            <td>${log.comment}</td>
         `;
         logTableBody.appendChild(row);
     });
@@ -67,37 +83,41 @@ function updateTable() {
 function editEntry(index) {
     const log = logbookData[index];
     
-    // Fill form with existing data
     document.getElementById('date').value = log.date;
-    document.getElementById('time').value = log.time;
+    document.getElementById('timeOn').value = log.timeOn;
+    document.getElementById('timeOff').value = log.timeOff;
     document.getElementById('callsign').value = log.callsign;
-    document.getElementById('frequency').value = log.frequency;
+    document.getElementById('name').value = log.name;
+    document.getElementById('freq').value = log.freq;
+    document.getElementById('band').value = log.band;
     document.getElementById('mode').value = log.mode;
     document.getElementById('rstSent').value = log.rstSent;
     document.getElementById('rstRcvd').value = log.rstRcvd;
-    document.getElementById('notes').value = log.notes;
+    document.getElementById('power').value = log.power;
+    document.getElementById('location').value = log.location;
+    document.getElementById('state').value = log.state;
+    document.getElementById('country').value = log.country;
+    document.getElementById('gridsquare').value = log.gridsquare;
+    document.getElementById('comment').value = log.comment;
 
-    // Set state to editing
     editingIndex = index;
-    document.getElementById('submitBtn').innerText = 'Update Entry';
+    submitBtn.innerText = 'Update Entry';
+    submitBtn.style.backgroundColor = '#ffc107';
     
-    // Close modal if it was open
     closeModal();
-    window.scrollTo(0, 0);
+    window.scrollTo({top: 0, behavior: 'smooth'});
 }
 
 function openModal() {
     modal.style.display = 'block';
-    updateTable();
+    document.body.style.overflow = 'hidden'; 
 }
 
 function closeModal() {
     modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
 }
 
-// Close modal if user clicks outside of it
 window.onclick = function(event) {
-    if (event.target == modal) {
-        closeModal();
-    }
+    if (event.target == modal) closeModal();
 };
