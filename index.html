@@ -1,162 +1,57 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>KJ5HOF Logbook</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-  <link rel="stylesheet" href="style.css">
-  <style>
-    #auth-container {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: #fff;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-    #auth-container.hidden {
-      display: none;
-    }
-    .auth-box {
-      background: white;
-      padding: 40px;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      max-width: 400px;
-      width: 100%;
-    }
-    .auth-box h2 {
-      margin-top: 0;
-      text-align: center;
-    }
-    .auth-box input {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      box-sizing: border-box;
-    }
-    .auth-box button {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      background: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .auth-box button:hover {
-      background: #0056b3;
-    }
-    .auth-toggle {
-      text-align: center;
-      margin-top: 10px;
-      font-size: 14px;
-    }
-    .auth-toggle a {
-      color: #007bff;
-      cursor: pointer;
-    }
-    #user-info {
-      position: absolute;
-      top: 50px;
-      right: 20px;
-      background: #f0f0f0;
-      padding: 10px 15px;
-      border-radius: 4px;
-      font-size: 12px;
-      z-index: 999;
-    }
-    #logout-btn {
-      background: #dc3545;
-      padding: 5px 10px;
-      margin-left: 10px;
-      cursor: pointer;
-      color: white;
-      border: none;
-      border-radius: 3px;
-    }
-  </style>
-</head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KJ5HOF Mobile Logbook</title>
+    <link rel="stylesheet" href="style.css">
+    </head>
 <body>
+    <div class="wrapper">
+        <header>
+            <h1>KJ5HOF Log</h1>
+            <div id="status-indicator">
+                <span id="connection-status">Checking...</span>
+            </div>
+        </header>
 
-<div id="auth-container">
-  <div class="auth-box">
-    <h2 id="auth-title">Login</h2>
-    <input type="email" id="email-input" placeholder="Email">
-    <input type="password" id="password-input" placeholder="Password">
-    <button id="auth-btn">Login</button>
-    <div class="auth-toggle">
-      <span id="toggle-text">Don't have an account?</span>
-      <a id="toggle-link">Sign Up</a>
+        <main>
+            <form id="log-form">
+                <div class="form-row">
+                    <input type="text" id="callsign" placeholder="CALLSIGN" required autocomplete="off">
+                </div>
+                
+                <div class="form-row">
+                    <input type="text" id="frequency" placeholder="MHz (e.g. 14.250)" required inputmode="decimal">
+                    <select id="mode">
+                        <option value="SSB">SSB</option>
+                        <option value="CW">CW</option>
+                        <option value="FT8">FT8</option>
+                        <option value="FM">FM</option>
+                        <option value="DMR">DMR</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <input type="number" id="rstSent" placeholder="Snt" value="59">
+                    <input type="number" id="rstRcvd" placeholder="Rcv" value="59">
+                </div>
+
+                <div class="form-row">
+                    <textarea id="notes" placeholder="Notes (QTH, Rig, Signal info...)" rows="3"></textarea>
+                </div>
+
+                <button type="submit" id="submit-btn">SAVE ENTRY</button>
+            </form>
+
+            <section id="history-section">
+                <h2>Recent Contacts</h2>
+                <div id="log-entries">
+                    </div>
+            </section>
+        </main>
     </div>
-  </div>
-</div>
 
-<div id="user-info" style="display:none">
-  <span id="user-display-email"></span>
-  <button id="logout-btn">Logout</button>
-</div>
-
-<header>
-  <strong>KJ5HOF Log</strong>
-  <button id="darkToggle">🌓 Theme</button>
-</header>
-
-<div id="main-view">
-  <div id="map"></div>
-  <section id="editor">
-    <input id="call" placeholder="Callsign" autocomplete="off">
-    <div class="row">
-      <input id="band" placeholder="Band">
-      <input id="mode" placeholder="Mode">
-    </div>
-    <div class="row">
-      <input id="lat" placeholder="Lat">
-      <input id="lon" placeholder="Lon">
-      <input id="grid" placeholder="Grid">
-    </div>
-    <div class="actions">
-      <button id="saveQSO">Save QSO</button>
-      <button id="deleteQSO" style="display:none; background:#dc3545;">Delete</button>
-      <button id="clearBtn">Clear / New</button>
-      <button id="showLogBtn" style="background: #20c997;">Log Book</button>
-    </div>
-  </section>
-</div>
-
-<div id="logbook-view" style="display:none">
-  <div class="view-header">
-    <h3>QSO Records</h3>
-    <button id="backToMap">Back to Map</button>
-  </div>
-  <div class="table-container">
-    <table id="qsoTable">
-      <thead>
-        <tr><th>Callsign</th><th>Band</th><th>Mode</th><th>Grid</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-  <div class="log-actions">
-    <button id="exportADIF">Export ADIF</button>
-    <button id="backupBtn" style="background: #6c757d;">Backup JSON</button>
-    <button id="restoreBtn" style="background: #6c757d;">Restore JSON</button>
-    <input type="file" id="restoreInput" accept=".json" style="display:none">
-  </div>
-</div>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-<script src="app.js"></script>
+    <script type="module" src="app.js"></script>
 </body>
 </html>
