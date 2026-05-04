@@ -8,12 +8,12 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="login-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#2c3e50; z-index:9999; display:flex; justify-content:center; align-items:center;">
-        <div style="background:#34495e; padding:30px; border-radius:15px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.5);">
-            <h2 style="color:#ecf0f1; margin-bottom:20px;">Owner Login</h2>
-            <input type="email" id="login-email" placeholder="Email" style="display:block; margin:10px auto; width:250px;">
-            <input type="password" id="login-pass" placeholder="Password" style="display:block; margin:10px auto; width:250px;">
-            <button id="login-btn" style="width:250px;">Sign In</button>
+    <div id="login-overlay">
+        <div class="login-box">
+            <h2>Owner Login</h2>
+            <input type="email" id="login-email" placeholder="Email">
+            <input type="password" id="login-pass" placeholder="Password">
+            <button id="login-btn">Sign In</button>
         </div>
     </div>
 
@@ -21,7 +21,10 @@
         <header>
             <h1>KJ5HOF Logbook</h1>
             <div id="connection-status">Checking Connection...</div>
-            <button id="logout-btn" style="padding:5px 10px; font-size:12px; margin-top:5px; background:#e74c3c;">Logout</button>
+            <div class="header-controls">
+                <button id="open-logbook-btn">Open Full Logbook</button>
+                <button id="logout-btn">Logout</button>
+            </div>
         </header>
 
         <div class="main-content">
@@ -40,10 +43,29 @@
             </div>
             <div id="map"></div>
         </div>
+    </div>
 
-        <div class="log-entries-container">
-            <h2>Recent Contacts</h2>
-            <div id="log-entries"></div>
+    <div id="logbook-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Station Logbook</h2>
+                <span class="close-logbook">&times;</span>
+            </div>
+            <div class="grid-scroll">
+                <table id="log-grid">
+                    <thead>
+                        <tr>
+                            <th>UTC Date/Time</th>
+                            <th>Callsign</th>
+                            <th>Freq (MHz)</th>
+                            <th>Mode</th>
+                            <th>Notes</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="log-grid-body"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
