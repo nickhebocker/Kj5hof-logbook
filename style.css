@@ -15,113 +15,94 @@ body {
     top: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.8);
+    background-color: rgba(0, 0, 0, 0.7);
     overflow-y: auto;
 }
 
 /* Mobile-Friendly Modal Content */
 .modal-content {
     background-color: #fff;
-    margin: 2% auto;
+    margin: 5% auto;
     padding: 15px;
     border-radius: 8px;
-    width: 98%; 
-    max-width: 1200px; 
-    box-sizing: border-box;
+    width: 95%; /* Responsive width */
+    max-width: 900px; /* Limit for desktop */
+    box-sizing: border-box; /* Padding included in width */
     position: relative;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
 .close-btn {
     float: right;
-    font-size: 30px;
+    font-size: 28px;
     font-weight: bold;
     cursor: pointer;
-    color: #cc0000;
-    padding: 0 10px;
+    color: #555;
 }
 
-/* Responsive Table Scroll */
+/* Responsive Table */
 .table-container {
     width: 100%;
-    overflow-x: auto;
-    margin-top: 10px;
-    border: 1px solid #ccc;
+    overflow-x: auto; /* Enable horizontal scroll for small screens */
     -webkit-overflow-scrolling: touch;
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 13px;
+    margin-top: 20px;
+    font-size: 14px;
 }
 
 th, td {
     border: 1px solid #ddd;
-    padding: 8px;
+    padding: 10px;
     text-align: left;
-    white-space: nowrap;
+    white-space: nowrap; /* Prevents text wrapping in tight spots */
 }
 
 th {
-    background-color: #0056b3;
+    background-color: #007bff;
     color: white;
     position: sticky;
     top: 0;
 }
 
 tr:nth-child(even) {
-    background-color: #f9f9f9;
+    background-color: #f2f2f2;
 }
 
-tr:hover {
-    background-color: #f1f1f1;
-}
-
-/* Action Buttons */
+/* Button Styling */
 .edit-btn {
     background-color: #ffc107;
     border: none;
-    padding: 6px 12px;
+    padding: 5px 10px;
     border-radius: 4px;
     cursor: pointer;
-    font-weight: bold;
+    font-size: 12px;
+}
+
+.edit-btn:hover {
+    background-color: #e0a800;
 }
 
 .save-btn {
     background-color: #28a745;
     color: white;
-    padding: 12px;
+    padding: 10px 20px;
     border: none;
     border-radius: 5px;
     cursor: pointer;
     width: 100%;
-    font-size: 16px;
-    font-weight: bold;
     margin-top: 10px;
 }
 
-/* Form Styling */
-.form-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 10px;
-    margin-bottom: 15px;
-}
-
-label {
-    display: block;
-    font-size: 12px;
-    font-weight: bold;
-    margin-bottom: 2px;
-    color: #333;
-}
-
-input, select, textarea {
+input[type="text"], input[type="date"], input[type="number"], select {
     width: 100%;
-    padding: 8px;
+    padding: 10px;
+    margin: 5px 0 15px 0;
+    display: inline-block;
     border: 1px solid #ccc;
     border-radius: 4px;
     box-sizing: border-box;
-    font-size: 14px;
 }
