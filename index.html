@@ -2,74 +2,45 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>KJ5HOF Logbook</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kj5hof Logbook</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="login-overlay">
+
+    <div id="login-container">
         <div class="login-box">
             <h2>Owner Login</h2>
-            <input type="email" id="login-email" placeholder="Email">
-            <input type="password" id="login-pass" placeholder="Password">
-            <button id="login-btn">Sign In</button>
+            <input type="text" id="username" placeholder="Username">
+            <input type="password" id="password" placeholder="Password">
+            <button id="login-btn">Login</button>
+            <p id="error-message" style="color: red; display: none; margin-top: 10px;">
+                Invalid username or password.
+            </p>
         </div>
     </div>
 
-    <div class="container" id="app-container" style="display:none;">
+    <div id="main-content" style="display: none;">
         <header>
-            <h1>KJ5HOF Logbook</h1>
-            <div id="connection-status">Checking Connection...</div>
-            <div class="header-controls">
-                <button id="open-logbook-btn">Open Full Logbook</button>
-                <button id="logout-btn">Logout</button>
-            </div>
+            <h1>Kj5hof Logbook</h1>
+            <button id="logout-btn">Logout</button>
         </header>
-
-        <div class="main-content">
-            <div class="form-container">
-                <form id="log-form">
-                    <input type="text" id="callsign" placeholder="Callsign" required autocomplete="off">
-                    <input type="text" id="frequency" placeholder="Frequency">
-                    <input type="text" id="mode" placeholder="Mode">
-                    <div class="rst-row">
-                        <input type="text" id="rstSent" placeholder="Sent" value="59">
-                        <input type="text" id="rstRcvd" placeholder="Rcvd" value="59">
-                    </div>
-                    <textarea id="notes" placeholder="Notes"></textarea>
-                    <button type="submit">Log Contact</button>
-                </form>
-            </div>
-            <div id="map"></div>
+        
+        <div id="log-display">
+            <table id="log-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Callsign</th>
+                        <th>Frequency</th>
+                        <th>Mode</th>
+                    </tr>
+                </thead>
+                <tbody id="log-body"></tbody>
+            </table>
         </div>
     </div>
 
-    <div id="logbook-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Station Logbook</h2>
-                <span class="close-logbook">&times;</span>
-            </div>
-            <div class="grid-scroll">
-                <table id="log-grid">
-                    <thead>
-                        <tr>
-                            <th>UTC Date/Time</th>
-                            <th>Callsign</th>
-                            <th>Freq (MHz)</th>
-                            <th>Mode</th>
-                            <th>Notes</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="log-grid-body"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script type="module" src="app.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
