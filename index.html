@@ -11,46 +11,39 @@
 <body>
 
 <header>
-  <h1>KJ5HOF Log</h1>
-  <div class="toggles">
-    <button id="darkToggle">🌓 Theme</button>
-    <button id="backupBtn">💾 Backup</button>
-    <input type="file" id="restoreInput" accept=".json" style="display:none">
-    <button onclick="document.getElementById('restoreInput').click()">📂 Restore</button>
-  </div>
+  <strong>KJ5HOF Log</strong>
+  <button id="darkToggle" style="width: auto; padding: 5px 10px;">🌓</button>
 </header>
-
-<section id="stats-bar">
-  <span id="stats">Loading...</span>
-  <div class="filters">
-    <select id="bandFilter"><option value="">All Bands</option></select>
-    <select id="modeFilter"><option value="">All Modes</option></select>
-  </div>
-</section>
 
 <div id="map"></div>
 
+<section id="stats-bar">
+  <span id="stats">QSOs: 0</span>
+  <div>
+    <select id="bandFilter"><option value="">Bands</option></select>
+    <select id="modeFilter"><option value="">Modes</option></select>
+  </div>
+</section>
+
 <section id="editor">
   <input id="call" placeholder="Callsign" autocomplete="off">
+
   <div class="row">
     <input id="band" placeholder="Band">
     <input id="mode" placeholder="Mode">
   </div>
+
   <div class="row">
     <input id="lat" placeholder="Lat">
     <input id="lon" placeholder="Lon">
     <input id="grid" placeholder="Grid">
   </div>
+
   <div class="actions">
     <button id="saveQSO">Save QSO</button>
-    <button id="deleteQSO" style="background:#dc3545; display:none">Delete</button>
-    <button id="clearBtn" style="background:#6c757d">Clear</button>
+    <button id="deleteQSO" style="display:none">Delete</button>
+    <button id="clearBtn">Clear / New</button>
   </div>
-</section>
-
-<section id="export-tools">
-  <button id="exportADIF">Export ADIF</button>
-  <button id="zoomFiltered">Center Map</button>
 </section>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
