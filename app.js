@@ -1,3 +1,4 @@
+// ---------------- SETUP ----------------
 const map = L.map("map").setView([30, 0], 2);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OSM" }).addTo(map);
 const cluster = L.markerClusterGroup();
@@ -5,6 +6,7 @@ map.addLayer(cluster);
 
 let db, qsos = [], selectedId = null, lookupAttempted = false;
 
+// ---------------- DATABASE ----------------
 const dbReq = indexedDB.open("KJ5HOF_Log", 2);
 dbReq.onupgradeneeded = e => {
   db = e.target.result;
@@ -22,20 +24,31 @@ function loadAll() {
 
 function render() {
   cluster.clearLayers();
-  const bF = document.getElementById("bandFilter").value;
-  const mF = document.getElementById("modeFilter").value;
+  const tableBody = document.querySelector("#qsoTable tbody");
+  tableBody.innerHTML = "";
 
-  qsos.filter(q => (!bF || q.band === bF) && (!mF || q.mode === mF)).forEach(q => {
+  qsos.forEach(q => {
     if (q.lat && q.lon) {
       const m = L.circleMarker([q.lat, q.lon], { radius: 10, color: "red" });
       m.bindPopup(`<b>${q.call}</b><br>${q.band} ${q.mode}`);
       m.on("click", () => selectQSO(q));
       cluster.addLayer(m);
     }
+    const row = tableBody.insertRow();
+    row.innerHTML = `<td>${q.call}</td><td>${q.band}</td><td>${q.mode}</td><td>${q.grid || ''}</td>`;
+    row.onclick = () => { selectQSO(q); toggleView(false); };
   });
-  document.getElementById("stats").textContent = `QSOs: ${qsos.length}`;
 }
 
+// ---------------- NAVIGATION ----------------
+function toggleView(showLog) {
+  document.getElementById("main-view").style.display = showLog ? "none" : "block";
+  document.getElementById("logbook-view").style.display = showLog ? "block" : "none";
+}
+document.getElementById("showLogBtn").onclick = () => toggleView(true);
+document.getElementById("backToMap").onclick = () => toggleView(false);
+
+// ---------------- SAVE LOGIC ----------------
 document.getElementById("saveQSO").onclick = async function() {
   const call = document.getElementById("call").value.trim().toUpperCase();
   const latF = document.getElementById("lat"), lonF = document.getElementById("lon"), gridF = document.getElementById("grid");
@@ -62,7 +75,7 @@ document.getElementById("saveQSO").onclick = async function() {
 
   const qso = {
     call, lat: parseFloat(latF.value) || null, lon: parseFloat(lonF.value) || null,
-    band: document.getElementById("band").value, mode: document.getElementById("mode").value, grid: gridF.value
+    band: document.getElementById("band").value.trim(), mode: document.getElementById("mode").value.trim(), grid: gridF.value.trim()
   };
   if (selectedId) qso.id = selectedId;
 
@@ -71,6 +84,7 @@ document.getElementById("saveQSO").onclick = async function() {
   tx.oncomplete = () => { resetForm(); loadAll(); };
 };
 
+// ---------------- HELPERS ----------------
 function resetForm() {
   selectedId = null; lookupAttempted = false;
   document.querySelectorAll("#editor input").forEach(i => i.value = "");
@@ -82,14 +96,55 @@ function resetForm() {
 function selectQSO(q) {
   selectedId = q.id; lookupAttempted = true;
   document.getElementById("call").value = q.call;
-  document.getElementById("lat").value = q.lat;
-  document.getElementById("lon").value = q.lon;
-  document.getElementById("band").value = q.band;
-  document.getElementById("mode").value = q.mode;
-  document.getElementById("grid").value = q.grid;
+  document.getElementById("lat").value = q.lat || "";
+  document.getElementById("lon").value = q.lon || "";
+  document.getElementById("band").value = q.band || "";
+  document.getElementById("mode").value = q.mode || "";
+  document.getElementById("grid").value = q.grid || "";
   document.getElementById("saveQSO").textContent = "Update Entry";
   document.getElementById("deleteQSO").style.display = "block";
 }
 
 document.getElementById("clearBtn").onclick = resetForm;
+document.getElementById("deleteQSO").onclick = () => {
+  if (!selectedId || !confirm("Delete?")) return;
+  const tx = db.transaction("qsos", "readwrite");
+  tx.objectStore("qsos").delete(selectedId);
+  tx.oncomplete = () => { resetForm(); loadAll(); };
+};
+
+// ---------------- EXPORT / BACKUP ----------------
+document.getElementById("exportADIF").onclick = () => {
+  let out = "ADIF Export\n<EOH>\n";
+  qsos.forEach(q => {
+    out += `<CALL:${q.call.length}>${q.call}<BAND:${q.band.length}>${q.band}<MODE:${q.mode.length}>${q.mode}<EOR>\n`;
+  });
+  download(out, "log.adi", "text/plain");
+};
+
+document.getElementById("backupBtn").onclick = () => {
+  download(JSON.stringify(qsos, null, 2), "log_backup.json", "application/json");
+};
+
+document.getElementById("restoreBtn").onclick = () => document.getElementById("restoreInput").click();
+document.getElementById("restoreInput").onchange = e => {
+  const reader = new FileReader();
+  reader.onload = () => {
+    const data = JSON.parse(reader.result);
+    const tx = db.transaction("qsos", "readwrite");
+    const store = tx.objectStore("qsos");
+    data.forEach(q => { delete q.id; store.add(q); });
+    tx.oncomplete = loadAll;
+  };
+  reader.readAsText(e.target.files[0]);
+};
+
+function download(content, filename, type) {
+  const blob = new Blob([content], { type: type });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
 document.getElementById("darkToggle").onclick = () => document.body.classList.toggle("dark");
