@@ -1,9 +1,7 @@
 // ---------------- 1. NAVIGATION & INITIALIZATION ----------------
-// We move this to the top so it works immediately
 function toggleView(showLog) {
   const main = document.getElementById("main-view");
   const log = document.getElementById("logbook-view");
-  
   if (showLog) {
     main.style.display = "none";
     log.style.display = "block";
@@ -13,7 +11,6 @@ function toggleView(showLog) {
   }
 }
 
-// Attach listeners immediately
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("showLogBtn").onclick = () => toggleView(true);
   document.getElementById("backToMap").onclick = () => toggleView(false);
@@ -31,25 +28,16 @@ let db, qsos = [], selectedId = null, lookupAttempted = false;
 
 // ---------------- 3. DATABASE ----------------
 const dbReq = indexedDB.open("KJ5HOF_Log", 2);
-
 dbReq.onupgradeneeded = e => {
   db = e.target.result;
-  if (!db.objectStoreNames.contains("qsos")) {
-    db.createObjectStore("qsos", { keyPath: "id", autoIncrement: true });
-  }
+  if (!db.objectStoreNames.contains("qsos")) db.createObjectStore("qsos", { keyPath: "id", autoIncrement: true });
 };
+dbReq.onsuccess = e => { db = e.target.result; loadAll(); };
 
-dbReq.onsuccess = e => {
-  db = e.target.result;
-  loadAll();
-};
-
-// ---------------- 4. RENDER (MAP + TABLE) ----------------
 function loadAll() {
   if (!db) return;
   const tx = db.transaction("qsos", "readonly");
-  const store = tx.objectStore("qsos");
-  store.getAll().onsuccess = e => {
+  tx.objectStore("qsos").getAll().onsuccess = e => {
     qsos = e.target.result;
     render();
   };
@@ -58,29 +46,23 @@ function loadAll() {
 function render() {
   cluster.clearLayers();
   const tableBody = document.querySelector("#qsoTable tbody");
-  if (!tableBody) return; // Safety check
+  if (!tableBody) return;
   tableBody.innerHTML = "";
 
   qsos.forEach(q => {
-    // Add to Map
     if (q.lat && q.lon) {
       const m = L.circleMarker([q.lat, q.lon], { radius: 10, color: "red" });
       m.bindPopup(`<b>${q.call}</b><br>${q.band} ${q.mode}`);
       m.on("click", () => selectQSO(q));
       cluster.addLayer(m);
     }
-
-    // Add to Excel Grid
     const row = tableBody.insertRow();
     row.innerHTML = `<td>${q.call}</td><td>${q.band}</td><td>${q.mode}</td><td>${q.grid || ''}</td>`;
-    row.onclick = () => {
-      selectQSO(q);
-      toggleView(false); // Switch back to map to see/edit the selected QSO
-    };
+    row.onclick = () => { selectQSO(q); toggleView(false); };
   });
 }
 
-// ---------------- 5. SAVE & LOOKUP ----------------
+// ---------------- 4. SAVE & LOOKUP (WITH ERROR REPORTING) ----------------
 document.getElementById("saveQSO").onclick = async function() {
   const call = document.getElementById("call").value.trim().toUpperCase();
   const latF = document.getElementById("lat"), lonF = document.getElementById("lon"), gridF = document.getElementById("grid");
@@ -90,10 +72,18 @@ document.getElementById("saveQSO").onclick = async function() {
   if (!latF.value && !lookupAttempted && !selectedId) {
     this.textContent = "Searching...";
     try {
-      const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://hamdb.org/api/'+call+'/json/KJ5HOF')}`);
+      const proxy = "https://api.allorigins.win/get?url=";
+      const target = encodeURIComponent(`https://hamdb.org/api/${call}/json/KJ5HOF`);
+      
+      const r = await fetch(proxy + target);
+      if (!r.ok) throw new Error(`HTTP Status ${r.status}`);
+      
       const j = await r.json(); 
+      if (!j.contents) throw new Error("Proxy returned empty content.");
+      
       const d = JSON.parse(j.contents);
-      if (d.hamdb?.callsign) {
+
+      if (d.hamdb && d.hamdb.callsign) {
         const i = d.hamdb.callsign;
         latF.value = i.lat || ""; 
         lonF.value = i.lng || ""; 
@@ -101,47 +91,41 @@ document.getElementById("saveQSO").onclick = async function() {
         this.textContent = "Confirm & Save";
         this.style.background = "#28a745";
       } else {
+        alert("Not Found: Callsign not in HamDB (US/CA/AU only).");
         this.textContent = "Manual Save";
         this.style.background = "#fd7e14";
       }
-    } catch (e) { this.textContent = "Save Anyway"; }
+    } catch (e) { 
+      // --- POPUP ERROR LOGGING ---
+      alert("Lookup Failed!\nReason: " + e.message + "\n\nNote: If using GitHub Pages, this is often a CORS or Proxy delay. You can still enter details manually.");
+      this.textContent = "Save Anyway"; 
+    }
     lookupAttempted = true; 
     return;
   }
 
   const qso = {
-    call, 
-    lat: parseFloat(latF.value) || null, 
-    lon: parseFloat(lonF.value) || null,
-    band: document.getElementById("band").value.trim(), 
-    mode: document.getElementById("mode").value.trim(), 
-    grid: gridF.value.trim()
+    call, lat: parseFloat(latF.value) || null, lon: parseFloat(lonF.value) || null,
+    band: document.getElementById("band").value.trim(), mode: document.getElementById("mode").value.trim(), grid: gridF.value.trim()
   };
-  
   if (selectedId) qso.id = selectedId;
 
   const tx = db.transaction("qsos", "readwrite");
   tx.objectStore("qsos").put(qso);
-  tx.oncomplete = () => {
-    resetForm();
-    loadAll();
-  };
+  tx.oncomplete = () => { resetForm(); loadAll(); };
 };
 
-// ---------------- 6. HELPERS ----------------
+// ---------------- 5. HELPERS ----------------
 function resetForm() {
-  selectedId = null; 
-  lookupAttempted = false;
+  selectedId = null; lookupAttempted = false;
   document.querySelectorAll("#editor input").forEach(i => i.value = "");
   const b = document.getElementById("saveQSO");
-  b.textContent = "Save QSO"; 
-  b.style.background = "";
+  b.textContent = "Save QSO"; b.style.background = "";
   document.getElementById("deleteQSO").style.display = "none";
 }
 
 function selectQSO(q) {
-  selectedId = q.id; 
-  lookupAttempted = true;
+  selectedId = q.id; lookupAttempted = true;
   document.getElementById("call").value = q.call;
   document.getElementById("lat").value = q.lat || "";
   document.getElementById("lon").value = q.lon || "";
@@ -159,37 +143,26 @@ document.getElementById("deleteQSO").onclick = () => {
   tx.oncomplete = () => { resetForm(); loadAll(); };
 };
 
-// --- Export/Backup (Attached to Log View) ---
+// ---------------- 6. IO ----------------
 document.getElementById("exportADIF").onclick = () => {
   let out = "ADIF Export\n<EOH>\n";
-  qsos.forEach(q => {
-    out += `<CALL:${q.call.length}>${q.call}<BAND:${q.band.length}>${q.band}<MODE:${q.mode.length}>${q.mode}<EOR>\n`;
-  });
+  qsos.forEach(q => { out += `<CALL:${q.call.length}>${q.call}<BAND:${q.band.length}>${q.band}<MODE:${q.mode.length}>${q.mode}<EOR>\n`; });
   download(out, "log.adi", "text/plain");
 };
-
-document.getElementById("backupBtn").onclick = () => {
-  download(JSON.stringify(qsos, null, 2), "log_backup.json", "application/json");
-};
-
+document.getElementById("backupBtn").onclick = () => download(JSON.stringify(qsos, null, 2), "log_backup.json", "application/json");
 document.getElementById("restoreBtn").onclick = () => document.getElementById("restoreInput").click();
-
 document.getElementById("restoreInput").onchange = e => {
   const reader = new FileReader();
   reader.onload = () => {
     const data = JSON.parse(reader.result);
     const tx = db.transaction("qsos", "readwrite");
-    const store = tx.objectStore("qsos");
-    data.forEach(q => { delete q.id; store.add(q); });
+    data.forEach(q => { delete q.id; tx.objectStore("qsos").add(q); });
     tx.oncomplete = loadAll;
   };
   reader.readAsText(e.target.files[0]);
 };
-
-function download(content, filename, type) {
-  const blob = new Blob([content], { type: type });
+function download(c, f, t) {
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
+  a.href = URL.createObjectURL(new Blob([c], { type: t }));
+  a.download = f; a.click();
 }
