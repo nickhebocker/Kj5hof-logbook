@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
 import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-// --- FIREBASE CONFIGURATION ---
+// --- FIREBASE CONFIG ---
 const firebaseConfig = {
     apiKey: "AIzaSyCuPlkWdIBTGsmpEQdmy0wTqrVJadL29kE",
     authDomain: "logbook-75575.firebaseapp.com",
@@ -11,91 +11,55 @@ const firebaseConfig = {
     appId: "1:700088204207:web:33b3c5cc221f02a2b2cd5a"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const LOCAL_STORAGE_KEY = 'kj5hof_log_data_v1';
+const LOCAL_STORAGE_KEY = 'kj5hof_log_data';
 
-// --- DOM ELEMENTS ---
-const logForm = document.getElementById('log-form');
-const logList = document.getElementById('log-entries');
-const statusEl = document.getElementById('connection-status');
+// --- INITIALIZE MAP ---
+const map = L.map('map').setView([30.2672, -97.7431], 4);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-// --- DATABASE LOGIC ---
+// --- APP FUNCTIONS ---
 
 function getLocalLogs() {
     return JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)) || [];
 }
 
 function renderLogs() {
+    const logList = document.getElementById('log-entries');
     const logs = getLocalLogs();
-    logList.innerHTML = '';
-    
-    if (logs.length === 0) {
-        logList.innerHTML = '<p class="empty-msg">No logs saved yet.</p>';
-        return;
-    }
-
-    logs.forEach(log => {
-        const div = document.createElement('div');
-        div.className = `log-card ${log.cloudSynced ? 'synced' : 'pending'}`;
-        div.innerHTML = `
-            <div class="card-top">
-                <span class="card-call">${log.callsign}</span>
-                <span class="card-mode">${log.frequency} | ${log.mode}</span>
-                <span class="sync-indicator">${log.cloudSynced ? '✓' : '☁'}</span>
-            </div>
-            <div class="card-rst">RST: ${log.rstSent}/${log.rstRcvd}</div>
-            <div class="card-notes">${log.notes}</div>
-            <div class="card-time">${new Date(log.timestamp).toLocaleTimeString()} - ${new Date(log.timestamp).toLocaleDateString()}</div>
-        `;
-        logList.appendChild(div);
-    });
+    logList.innerHTML = logs.map(log => `
+        <div class="log-item ${log.cloudSynced ? 'synced' : 'pending'}">
+            <strong>${log.callsign}</strong> | ${log.frequency} | ${log.mode} | 
+            RST: ${log.rstSent}/${log.rstRcvd} | <span>${log.cloudSynced ? '✓' : '☁'}</span>
+            <p>${log.notes}</p>
+            <small>${new Date(log.timestamp).toLocaleString()}</small>
+        </div>
+    `).join('');
 }
 
-async function syncEntryToFirebase(entry) {
+async function syncToFirebase(entry) {
     if (!navigator.onLine) return;
-
     try {
         await addDoc(collection(db, "logs"), {
-            callsign: entry.callsign,
-            frequency: entry.frequency,
-            mode: entry.mode,
-            rstSent: entry.rstSent,
-            rstRcvd: entry.rstRcvd,
-            notes: entry.notes,
-            timestamp: entry.timestamp,
+            ...entry,
             createdAt: serverTimestamp()
         });
-
-        // Update local record to show it is now in the cloud
         const logs = getLocalLogs();
-        const index = logs.findIndex(l => l.id === entry.id);
-        if (index !== -1) {
-            logs[index].cloudSynced = true;
+        const idx = logs.findIndex(l => l.id === entry.id);
+        if (idx !== -1) {
+            logs[idx].cloudSynced = true;
             localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(logs));
             renderLogs();
         }
-    } catch (error) {
-        console.error("Firebase Sync Error:", error);
-    }
+    } catch (e) { console.error("Sync Error", e); }
 }
 
-async function backgroundSync() {
-    if (!navigator.onLine) return;
-    const logs = getLocalLogs();
-    const unsynced = logs.filter(l => !l.cloudSynced);
-    for (const log of unsynced) {
-        await syncEntryToFirebase(log);
-    }
-}
+// --- EVENTS ---
 
-// --- EVENT HANDLERS ---
-
-logForm.addEventListener('submit', async (e) => {
+document.getElementById('log-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
-    const newEntry = {
+    const entry = {
         id: Date.now(),
         timestamp: new Date().toISOString(),
         callsign: document.getElementById('callsign').value.toUpperCase(),
@@ -107,35 +71,26 @@ logForm.addEventListener('submit', async (e) => {
         cloudSynced: false
     };
 
-    // 1. Save Locally (Instant Feedback)
     const logs = getLocalLogs();
-    logs.unshift(newEntry);
+    logs.unshift(entry);
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(logs));
     renderLogs();
+    e.target.reset();
     
-    // 2. Clear Form & Reset Focus
-    logForm.reset();
-    document.getElementById('callsign').focus();
-
-    // 3. Attempt Background Cloud Sync
-    await syncEntryToFirebase(newEntry);
+    await syncToFirebase(entry);
 });
 
-function updateStatus() {
-    if (navigator.onLine) {
-        statusEl.innerText = "ONLINE";
-        statusEl.className = "online";
-        backgroundSync();
-    } else {
-        statusEl.innerText = "OFFLINE (Local Mode)";
-        statusEl.className = "offline";
-    }
-}
+window.addEventListener('online', () => {
+    document.getElementById('connection-status').innerText = "Online";
+    getLocalLogs().filter(l => !l.cloudSynced).forEach(syncToFirebase);
+});
 
-// Listen for network changes
-window.addEventListener('online', updateStatus);
-window.addEventListener('offline', updateStatus);
+window.addEventListener('offline', () => {
+    document.getElementById('connection-status').innerText = "Offline (Local Mode)";
+});
 
-// Application Boot
-updateStatus();
+// Initial Load
 renderLogs();
+if (navigator.onLine) {
+    getLocalLogs().filter(l => !l.cloudSynced).forEach(syncToFirebase);
+}
