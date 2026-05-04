@@ -1,9 +1,26 @@
+/* style.css */
+:root {
+  --bg: #ffffff;
+  --fg: #000000;
+}
+body.dark {
+  --bg: #121212;
+  --fg: #e0e0e0;
+}
 body {
-  font-family: Arial, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
   margin: 0;
   padding: 10px;
+  font-family: Arial, sans-serif;
 }
-
+header, section {
+  margin-bottom: 10px;
+}
+input, select, button {
+  padding: 6px;
+  margin: 4px;
+}
 #map {
   height: 70vh;
   width: 100%;
