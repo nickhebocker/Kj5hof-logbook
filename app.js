@@ -60,7 +60,7 @@ function render() {
   });
 }
 
-// ---------------- THE SMART SAVE & ADDRESS CORRECTION ----------------
+// ---------------- THE SMART SAVE (FIXED ERROR REPORTING) ----------------
 document.getElementById("saveQSO").onclick = async function() {
   const btn = this;
   const call = document.getElementById("call").value.trim().toUpperCase();
@@ -73,33 +73,33 @@ document.getElementById("saveQSO").onclick = async function() {
     btn.disabled = true;
 
     try {
+      // Trying a different proxy that is less likely to be blocked on mobile data
       const target = `https://callook.info/${call}/json`;
-      const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(target)}`;
+      const proxy = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(target)}`;
       
       const r = await fetch(proxy);
-      const j = await r.json(); 
-      const data = JSON.parse(j.contents);
+      if (!r.ok) throw new Error(`Server returned HTTP ${r.status}`);
+      
+      const data = await r.json();
 
       if (data && data.status === "VALID") {
-        // COORDINATES MISSING -> PROMPT USER TO VERIFY/FIX ADDRESS
+        // CASE: Coordinates missing (The Apartment Problem)
         if (!data.location.latitude || data.location.latitude === "") {
           const rawAddr = `${data.address.line1}, ${data.address.line2}`;
           
-          // Generate a suggested clean address (Remove Apt/Unit)
           let fixedAddr = data.address.line1.replace(/(APPT|APT|UNIT|STE|SUITE|#).*$/i, "").trim();
           fixedAddr = `${fixedAddr}, ${data.address.line2}`;
 
           const userChoice = prompt(
-            `Coordinates missing from FCC data.\n\n` +
+            `Callsign found, but map coordinates are missing.\n\n` +
             `Original: ${rawAddr}\n` +
             `Fixed: ${fixedAddr}\n\n` +
-            `Click OK to use the FIXED address, or edit it below:`, 
+            `Press OK to use the FIXED address for the map, or edit it below:`, 
             fixedAddr
           );
 
           if (userChoice) {
-            btn.textContent = "Geocoding...";
-            // Use Nominatim to get Cords from the Clean Address
+            btn.textContent = "Locating...";
             const geoTarget = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(userChoice)}`;
             const geoResp = await fetch(geoTarget);
             const geoData = await geoResp.json();
@@ -108,14 +108,12 @@ document.getElementById("saveQSO").onclick = async function() {
               const res = geoData[0];
               latF.value = parseFloat(res.lat).toFixed(4);
               lonF.value = parseFloat(res.lon).toFixed(4);
-              gridF.value = latLonToGrid(res.lat, res.lon); // Generate Grid automatically
+              gridF.value = latLonToGrid(res.lat, res.lon);
               
               btn.textContent = "Verify & Save";
               btn.style.background = "#28a745";
             } else {
-              alert("Map service failed. Please enter details manually.");
-              btn.textContent = "Save Manual";
-              btn.style.background = "#fd7e14";
+              throw new Error("Map service could not find that specific address.");
             }
           }
         } else {
@@ -127,12 +125,13 @@ document.getElementById("saveQSO").onclick = async function() {
           btn.style.background = "#28a745";
         }
       } else {
-        alert("Not in FCC records.");
-        btn.textContent = "Save Manual";
+        throw new Error("Callsign not found in FCC database.");
       }
     } catch (e) { 
-      alert("Search failed. Entering manual mode.");
+      // THIS NOW SHOWS THE REAL REASON
+      alert("Search Failed!\n\nReason: " + e.message + "\n\nYou can still enter details manually and hit Save.");
       btn.textContent = "Save Anyway";
+      btn.style.background = "#6c757d";
     }
     
     lookupAttempted = true; 
@@ -140,7 +139,7 @@ document.getElementById("saveQSO").onclick = async function() {
     return;
   }
 
-  // Final Save
+  // Final Save Logic
   const qso = {
     call, lat: parseFloat(latF.value) || null, lon: parseFloat(lonF.value) || null,
     band: document.getElementById("band").value.trim(), mode: document.getElementById("mode").value.trim(), grid: gridF.value.trim()
@@ -152,7 +151,7 @@ document.getElementById("saveQSO").onclick = async function() {
   tx.oncomplete = () => { resetForm(); loadAll(); };
 };
 
-// --- HELPER: Generate Maidenhead Grid from Lat/Lon ---
+// --- HELPER: Grid Calculation ---
 function latLonToGrid(lat, lon) {
   lat = parseFloat(lat) + 90;
   lon = parseFloat(lon) + 180;
