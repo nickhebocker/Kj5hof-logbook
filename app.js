@@ -10,10 +10,10 @@ map.addLayer(cluster);
 let db;
 let qsos = [];
 let selectedId = null;
-let lookupReady = false; 
+let lookupAttempted = false; 
 
 // ---------------- DATABASE ----------------
-const dbReq = indexedDB.open("KJ5HOF_Log", 2); // Version 2
+const dbReq = indexedDB.open("KJ5HOF_Log", 2);
 
 dbReq.onupgradeneeded = e => {
   db = e.target.result;
@@ -29,6 +29,7 @@ dbReq.onsuccess = e => {
 
 // ---------------- DATA HANDLING ----------------
 function loadAll() {
+  if (!db) return;
   const tx = db.transaction("qsos", "readonly");
   const store = tx.objectStore("qsos");
   const req = store.getAll();
@@ -49,86 +50,99 @@ function render() {
   );
 
   filtered.forEach(q => {
-    if (!q.lat || !q.lon) return;
-    const marker = L.circleMarker([q.lat, q.lon], {
-      radius: 10,
-      color: q.band === "20m" ? "red" : q.band === "40m" ? "blue" : "green",
-      fillOpacity: 0.7
-    });
-    marker.bindPopup(`<b>${q.call}</b><br>${q.band} ${q.mode}<br>${q.grid || ''}`);
-    marker.on("click", () => selectQSO(q));
-    cluster.addLayer(marker);
+    // Only map if we have coords, but keep in list
+    if (q.lat && q.lon) {
+      const marker = L.circleMarker([q.lat, q.lon], {
+        radius: 10,
+        color: q.band === "20m" ? "red" : q.band === "40m" ? "blue" : "green",
+        fillOpacity: 0.7
+      });
+      marker.bindPopup(`<b>${q.call}</b><br>${q.band} ${q.mode}<br>${q.grid || ''}`);
+      marker.on("click", () => selectQSO(q));
+      cluster.addLayer(marker);
+    }
   });
 
   updateFilters();
-  document.getElementById("stats").textContent = `QSOs: ${filtered.length}`;
+  document.getElementById("stats").textContent = `Logged: ${qsos.length} | Shown: ${filtered.length}`;
 }
 
-// ---------------- MOBILE LOOKUP + SAVE ----------------
+// ---------------- THE SMART SAVE BUTTON ----------------
 document.getElementById("saveQSO").onclick = async function() {
+  const btn = this;
   const call = document.getElementById("call").value.trim().toUpperCase();
-  const latField = document.getElementById("lat");
-  const lonField = document.getElementById("lon");
+  const latF = document.getElementById("lat");
+  const lonF = document.getElementById("lon");
+  const gridF = document.getElementById("grid");
 
-  if (!call) return alert("Enter Callsign");
+  if (!call) return alert("Please enter a callsign.");
 
-  // Step 1: If Lat/Lon are empty, do the lookup first
-  if (!latField.value && !lookupReady && !selectedId) {
-    this.textContent = "Searching...";
-    this.disabled = true;
+  // STEP 1: Attempt Lookup if fields are empty and we haven't tried yet
+  if (!latF.value && !lookupAttempted && !selectedId) {
+    btn.textContent = "Searching HamDB...";
+    btn.disabled = true;
 
     try {
       const proxy = "https://api.allorigins.win/get?url=";
       const target = encodeURIComponent(`https://hamdb.org/api/${call}/json/KJ5HOF`);
       const resp = await fetch(proxy + target);
-      const wrapper = await resp.json();
-      const data = JSON.parse(wrapper.contents);
+      const json = await resp.json();
+      const data = JSON.parse(json.contents);
 
       if (data.hamdb && data.hamdb.callsign) {
         const info = data.hamdb.callsign;
-        latField.value = info.lat || "";
-        lonField.value = info.lng || "";
-        document.getElementById("grid").value = info.grid || "";
-        
-        this.textContent = "Confirm & Save";
-        this.style.background = "#fd7e14"; // Change color to indicate step 2
-        lookupReady = true;
+        latF.value = info.lat || "";
+        lonF.value = info.lng || "";
+        gridF.value = info.grid || "";
+        btn.textContent = "Verify & Save";
+        btn.style.background = "#28a745"; // Success Green
       } else {
-        this.textContent = "Not Found - Save Anyway?";
-        lookupReady = true;
+        btn.textContent = "Not Found - Save Manual?";
+        btn.style.background = "#fd7e14"; // Warning Orange
       }
     } catch (e) {
-      this.textContent = "Error - Save Anyway?";
-      lookupReady = true;
+      btn.textContent = "Lookup Failed - Save Manual?";
+      btn.style.background = "#6c757d"; // Neutral Grey
     }
-    this.disabled = false;
-    return; // Stop here for user to see result
+    
+    lookupAttempted = true;
+    btn.disabled = false;
+    return; // Stop here so user can see/edit data
   }
 
-  // Step 2: Actually Save
+  // STEP 2: Actual Save to Database
+  btn.disabled = true;
+  btn.textContent = "Saving...";
+
   const qso = {
     call: call,
-    lat: parseFloat(latField.value) || null,
-    lon: parseFloat(lonField.value) || null,
+    lat: parseFloat(latF.value) || null,
+    lon: parseFloat(lonF.value) || null,
     band: document.getElementById("band").value.trim(),
     mode: document.getElementById("mode").value.trim(),
-    grid: document.getElementById("grid").value.trim()
+    grid: gridF.value.trim()
   };
 
   if (selectedId) qso.id = selectedId;
 
   const tx = db.transaction("qsos", "readwrite");
-  tx.objectStore("qsos").put(qso);
+  const store = tx.objectStore("qsos");
+  store.put(qso);
   
   tx.oncomplete = () => {
     resetForm();
-    loadAll();
+    loadAll(); // This refreshes the map
+  };
+  
+  tx.onerror = () => {
+    alert("Database Error!");
+    btn.disabled = false;
   };
 };
 
 function resetForm() {
   selectedId = null;
-  lookupReady = false;
+  lookupAttempted = false;
   document.querySelectorAll("#editor input").forEach(i => i.value = "");
   const btn = document.getElementById("saveQSO");
   btn.textContent = "Save QSO";
@@ -141,7 +155,7 @@ document.getElementById("clearBtn").onclick = resetForm;
 
 function selectQSO(q) {
   selectedId = q.id;
-  lookupReady = true; // Disable auto-lookup when editing existing
+  lookupAttempted = true; 
   document.getElementById("call").value = q.call;
   document.getElementById("lat").value = q.lat || "";
   document.getElementById("lon").value = q.lon || "";
@@ -150,13 +164,13 @@ function selectQSO(q) {
   document.getElementById("grid").value = q.grid || "";
   
   const btn = document.getElementById("saveQSO");
-  btn.textContent = "Update QSO";
+  btn.textContent = "Update Entry";
   btn.style.background = "#007bff";
   document.getElementById("deleteQSO").style.display = "inline-block";
 }
 
 document.getElementById("deleteQSO").onclick = () => {
-  if (!selectedId) return;
+  if (!selectedId || !confirm("Delete this entry?")) return;
   const tx = db.transaction("qsos", "readwrite");
   tx.objectStore("qsos").delete(selectedId);
   tx.oncomplete = () => { resetForm(); loadAll(); };
@@ -166,52 +180,51 @@ document.getElementById("deleteQSO").onclick = () => {
 function updateFilters() {
   const bSel = document.getElementById("bandFilter");
   const mSel = document.getElementById("modeFilter");
-  if (bSel.options.length > 1) return; // Only populate once
+  
+  // Get current selections
+  const valB = bSel.value;
+  const valM = mSel.value;
 
   const bands = [...new Set(qsos.map(q => q.band))].filter(x => x).sort();
   const modes = [...new Set(qsos.map(q => q.mode))].filter(x => x).sort();
 
+  bSel.innerHTML = '<option value="">All Bands</option>';
+  mSel.innerHTML = '<option value="">All Modes</option>';
+  
   bands.forEach(b => bSel.add(new Option(b, b)));
   modes.forEach(m => mSel.add(new Option(m, m)));
+  
+  bSel.value = valB;
+  mSel.value = valM;
 }
 
 document.getElementById("bandFilter").onchange = render;
 document.getElementById("modeFilter").onchange = render;
 
 document.getElementById("zoomFiltered").onclick = () => {
-  if (cluster.getLayers().length) map.fitBounds(cluster.getBounds());
-};
-
-document.getElementById("exportADIF").onclick = () => {
-  let out = "ADIF Export\n<EOH>\n";
-  qsos.forEach(q => {
-    out += `<CALL:${q.call.length}>${q.call}<BAND:${q.band.length}>${q.band}<MODE:${q.mode.length}>${q.mode}<EOR>\n`;
-  });
-  const blob = new Blob([out], {type: "text/plain"});
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "log.adi";
-  a.click();
+  if (cluster.getLayers().length) map.fitBounds(cluster.getBounds(), {padding: [50, 50]});
 };
 
 document.getElementById("darkToggle").onclick = () => document.body.classList.toggle("dark");
 
 document.getElementById("backupBtn").onclick = () => {
-    const blob = new Blob([JSON.stringify(qsos)], {type: "application/json"});
+    const blob = new Blob([JSON.stringify(qsos, null, 2)], {type: "application/json"});
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "log_backup.json";
+    a.download = `KJ5HOF_Backup_${new Date().toISOString().slice(0,10)}.json`;
     a.click();
 };
 
 document.getElementById("restoreInput").onchange = e => {
     const reader = new FileReader();
     reader.onload = () => {
-        const data = JSON.parse(reader.result);
-        const tx = db.transaction("qsos", "readwrite");
-        const store = tx.objectStore("qsos");
-        data.forEach(q => { delete q.id; store.add(q); });
-        tx.oncomplete = loadAll;
+        try {
+            const data = JSON.parse(reader.result);
+            const tx = db.transaction("qsos", "readwrite");
+            const store = tx.objectStore("qsos");
+            data.forEach(q => { delete q.id; store.add(q); });
+            tx.oncomplete = loadAll;
+        } catch(err) { alert("Invalid Backup File"); }
     };
     reader.readAsText(e.target.files[0]);
 };
