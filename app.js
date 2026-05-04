@@ -1,8 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, serverTimestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
-// --- FIREBASE CONFIGURATION ---
 const firebaseConfig = {
     apiKey: "AIzaSyCuPlkWdIBTGsmpEQdmy0wTqrVJadL29kE",
     authDomain: "logbook-75575.firebaseapp.com",
@@ -15,85 +14,85 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
-
-// --- MAP INITIALIZATION ---
-const map = L.map('map').setView([31.9686, -99.9018], 6); 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-
-// --- LOGIN POP-UP ERROR HANDLING ---
-const loginBtn = document.getElementById('login-btn');
-const loginOverlay = document.getElementById('login-overlay');
-const appContainer = document.getElementById('app-container');
-
-// Monitor Auth State
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        loginOverlay.style.display = 'none';
-        appContainer.style.display = 'block';
-        setTimeout(() => map.invalidateSize(), 400); // Fixes map on reveal
-    } else {
-        loginOverlay.style.display = 'flex';
-        appContainer.style.display = 'none';
-    }
-});
-
-// Login Execution with Mobile Pop-up Errors
-loginBtn.addEventListener('click', async () => {
-    const email = document.getElementById('login-email').value;
-    const pass = document.getElementById('login-pass').value;
-
-    if (!email || !pass) {
-        alert("Please enter both email and password.");
-        return;
-    }
-
-    try {
-        await signInWithEmailAndPassword(auth, email, pass);
-    } catch (error) {
-        // This creates the pop-up error on your mobile screen
-        console.error("Login failed:", error.code);
-        
-        switch (error.code) {
-            case 'auth/invalid-credential':
-                alert("Error: Invalid email or password. Please try again.");
-                break;
-            case 'auth/user-not-found':
-                alert("Error: No account found with this email.");
-                break;
-            case 'auth/wrong-password':
-                alert("Error: Incorrect password.");
-                break;
-            case 'auth/network-request-failed':
-                alert("Error: Network issue. Check your connection.");
-                break;
-            default:
-                alert("Login Error: " + error.message);
-        }
-    }
-});
-
-// Logout logic
-document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
-
-// --- EXISTING LOGGING LOGIC ---
 const LOCAL_STORAGE_KEY = 'kj5hof_logs';
 
-function getLocalLogs() {
-    return JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)) || [];
-}
+// UI Elements
+const logModal = document.getElementById('logbook-modal');
+const logGridBody = document.getElementById('log-grid-body');
 
-function renderLogs() {
-    const logEntries = document.getElementById('log-entries');
+// Auth Switch
+onAuthStateChanged(auth, (user) => {
+    document.getElementById('login-overlay').style.display = user ? 'none' : 'flex';
+    document.getElementById('app-container').style.display = user ? 'block' : 'none';
+});
+
+// Login/Logout
+document.getElementById('login-btn').onclick = () => {
+    const email = document.getElementById('login-email').value;
+    const pass = document.getElementById('login-pass').value;
+    signInWithEmailAndPassword(auth, email, pass).catch(e => alert(e.message));
+};
+document.getElementById('logout-btn').onclick = () => signOut(auth);
+
+// Modal Controls
+document.getElementById('open-logbook-btn').onclick = () => {
+    renderGrid();
+    logModal.style.display = 'block';
+};
+document.querySelector('.close-logbook').onclick = () => logModal.style.display = 'none';
+
+// Map
+const map = L.map('map').setView([31.9686, -99.9018], 6);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+const getLocalLogs = () => JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)) || [];
+
+// Delete Logic
+window.deleteEntry = async (id) => {
+    if (!confirm("Delete this entry?")) return;
+    let logs = getLocalLogs().filter(l => l.id !== id);
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(logs));
+    renderGrid();
+    
+    if (navigator.onLine) {
+        const q = query(collection(db, "logs"), where("id", "==", id));
+        const snap = await getDocs(q);
+        snap.forEach(d => deleteDoc(d.ref));
+    }
+};
+
+// Inline Edit Logic
+window.editEntry = async (id, field, value) => {
+    let logs = getLocalLogs();
+    const idx = logs.findIndex(l => l.id === id);
+    if (idx !== -1) {
+        logs[idx][field] = value;
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(logs));
+        
+        if (navigator.onLine) {
+            const q = query(collection(db, "logs"), where("id", "==", id));
+            const snap = await getDocs(q);
+            snap.forEach(d => updateDoc(d.ref, { [field]: value }));
+        }
+    }
+};
+
+function renderGrid() {
     const logs = getLocalLogs();
-    logEntries.innerHTML = logs.map(log => `
-        <div class="log-item">
-            <strong>${log.callsign}</strong> - ${log.frequency}MHz (${log.mode})<br>
-            <small>${new Date(log.timestamp).toLocaleString()}</small>
-        </div>
+    logGridBody.innerHTML = logs.map(log => `
+        <tr>
+            <td>${new Date(log.timestamp).toLocaleString()}</td>
+            <td contenteditable="true" onblur="editEntry(${log.id}, 'callsign', this.innerText)">${log.callsign}</td>
+            <td contenteditable="true" onblur="editEntry(${log.id}, 'frequency', this.innerText)">${log.frequency}</td>
+            <td contenteditable="true" onblur="editEntry(${log.id}, 'mode', this.innerText)">${log.mode}</td>
+            <td contenteditable="true" onblur="editEntry(${log.id}, 'notes', this.innerText)">${log.notes}</td>
+            <td><button class="del-btn" onclick="deleteEntry(${log.id})">Delete</button></td>
+        </tr>
     `).join('');
 }
 
-document.getElementById('log-form').addEventListener('submit', async (e) => {
+// Form Submit
+document.getElementById('log-form').onsubmit = async (e) => {
     e.preventDefault();
     const entry = {
         id: Date.now(),
@@ -105,24 +104,14 @@ document.getElementById('log-form').addEventListener('submit', async (e) => {
         rstRcvd: document.getElementById('rstRcvd').value,
         notes: document.getElementById('notes').value
     };
-
-    const logs = getLocalLogs();
+    
+    let logs = getLocalLogs();
     logs.unshift(entry);
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(logs));
-    renderLogs();
-
-    if (navigator.onLine && auth.currentUser) {
-        try {
-            await addDoc(collection(db, "logs"), { 
-                ...entry, 
-                uid: auth.currentUser.uid, 
-                createdAt: serverTimestamp() 
-            });
-        } catch (err) {
-            console.error("Cloud Sync Failed", err);
-        }
+    
+    if (navigator.onLine) {
+        await addDoc(collection(db, "logs"), { ...entry, createdAt: serverTimestamp(), uid: auth.currentUser.uid });
     }
     e.target.reset();
-});
-
-renderLogs();
+    alert("Saved!");
+};
