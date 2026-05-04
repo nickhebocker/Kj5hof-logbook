@@ -2,56 +2,43 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>KJ5HOF Mobile Logbook</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KJ5HOF Logbook</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
-    <div class="wrapper">
-        <header>
-            <h1>KJ5HOF Log</h1>
-            <div id="status-indicator">
-                <span id="connection-status">Checking...</span>
-            </div>
-        </header>
+    <div class="container">
+        <div class="header">
+            <h1>KJ5HOF Logbook</h1>
+            <div id="connection-status">Checking Connection...</div>
+        </div>
 
-        <main>
-            <form id="log-form">
-                <div class="form-row">
-                    <input type="text" id="callsign" placeholder="CALLSIGN" required autocomplete="off">
-                </div>
-                
-                <div class="form-row">
-                    <input type="text" id="frequency" placeholder="MHz (e.g. 14.250)" required inputmode="decimal">
-                    <select id="mode">
-                        <option value="SSB">SSB</option>
-                        <option value="CW">CW</option>
-                        <option value="FT8">FT8</option>
-                        <option value="FM">FM</option>
-                        <option value="DMR">DMR</option>
-                    </select>
-                </div>
-
-                <div class="form-row">
-                    <input type="number" id="rstSent" placeholder="Snt" value="59">
-                    <input type="number" id="rstRcvd" placeholder="Rcv" value="59">
-                </div>
-
-                <div class="form-row">
-                    <textarea id="notes" placeholder="Notes (QTH, Rig, Signal info...)" rows="3"></textarea>
-                </div>
-
-                <button type="submit" id="submit-btn">SAVE ENTRY</button>
-            </form>
-
-            <section id="history-section">
-                <h2>Recent Contacts</h2>
-                <div id="log-entries">
+        <div class="main-content">
+            <div class="form-container">
+                <form id="log-form">
+                    <input type="text" id="callsign" placeholder="Callsign" required>
+                    <input type="text" id="frequency" placeholder="Frequency">
+                    <input type="text" id="mode" placeholder="Mode">
+                    <div class="rst-row">
+                        <input type="text" id="rstSent" placeholder="Sent">
+                        <input type="text" id="rstRcvd" placeholder="Rcvd">
                     </div>
-            </section>
-        </main>
+                    <textarea id="notes" placeholder="Notes"></textarea>
+                    <button type="submit">Log Contact</button>
+                </form>
+            </div>
+
+            <div id="map"></div>
+        </div>
+
+        <div class="log-entries-container">
+            <h2>Recent Contacts</h2>
+            <div id="log-entries"></div>
+        </div>
     </div>
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script type="module" src="app.js"></script>
 </body>
 </html>
