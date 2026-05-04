@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
 import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-// --- FIREBASE SETUP ---
+// --- FIREBASE CONFIGURATION ---
 const firebaseConfig = {
     apiKey: "AIzaSyCuPlkWdIBTGsmpEQdmy0wTqrVJadL29kE",
     authDomain: "logbook-75575.firebaseapp.com",
@@ -11,6 +11,7 @@ const firebaseConfig = {
     appId: "1:700088204207:web:33b3c5cc221f02a2b2cd5a"
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const LOCAL_STORAGE_KEY = 'kj5hof_log_data_v1';
@@ -20,7 +21,7 @@ const logForm = document.getElementById('log-form');
 const logList = document.getElementById('log-entries');
 const statusEl = document.getElementById('connection-status');
 
-// --- APP LOGIC ---
+// --- DATABASE LOGIC ---
 
 function getLocalLogs() {
     return JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)) || [];
@@ -67,7 +68,7 @@ async function syncEntryToFirebase(entry) {
             createdAt: serverTimestamp()
         });
 
-        // Update local status after successful cloud save
+        // Update local record to show it is now in the cloud
         const logs = getLocalLogs();
         const index = logs.findIndex(l => l.id === entry.id);
         if (index !== -1) {
@@ -76,7 +77,7 @@ async function syncEntryToFirebase(entry) {
             renderLogs();
         }
     } catch (error) {
-        console.error("Sync error:", error);
+        console.error("Firebase Sync Error:", error);
     }
 }
 
@@ -106,17 +107,17 @@ logForm.addEventListener('submit', async (e) => {
         cloudSynced: false
     };
 
-    // 1. Save Locally
+    // 1. Save Locally (Instant Feedback)
     const logs = getLocalLogs();
     logs.unshift(newEntry);
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(logs));
     renderLogs();
     
-    // 2. Clear Form
+    // 2. Clear Form & Reset Focus
     logForm.reset();
     document.getElementById('callsign').focus();
 
-    // 3. Try Firebase
+    // 3. Attempt Background Cloud Sync
     await syncEntryToFirebase(newEntry);
 });
 
@@ -131,9 +132,10 @@ function updateStatus() {
     }
 }
 
+// Listen for network changes
 window.addEventListener('online', updateStatus);
 window.addEventListener('offline', updateStatus);
 
-// Boot app
+// Application Boot
 updateStatus();
 renderLogs();
