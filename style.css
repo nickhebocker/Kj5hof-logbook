@@ -11,30 +11,45 @@ body {
 
 .container {
     background-color: #34495e;
-    padding: 30px;
+    padding: 20px; /* Reduced for mobile breathing room */
     border-radius: 15px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    width: 90%;
+    width: 95%; /* Fits better on narrow screens */
     max-width: 1200px;
     backdrop-filter: blur(10px);
+    box-sizing: border-box; /* Ensures padding doesn't increase width */
 }
 
-header { text-align: center; margin-bottom: 30px; }
-h1 { margin: 0; font-size: 2.5em; letter-spacing: 2px; text-transform: uppercase; }
+header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+h1 {
+    margin: 0;
+    font-size: 2.2em;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
 
 .main-content {
     display: grid;
     grid-template-columns: 1fr 2fr;
-    gap: 30px;
+    gap: 20px;
 }
 
 #map {
     height: 400px;
     border-radius: 10px;
     border: 2px solid #16a085;
+    width: 100%;
 }
 
-form { display: flex; flex-direction: column; }
+form {
+    display: flex;
+    flex-direction: column;
+}
+
 input, textarea {
     background-color: #2c3e50;
     border: 1px solid #16a085;
@@ -42,10 +57,19 @@ input, textarea {
     padding: 12px;
     margin-bottom: 15px;
     border-radius: 5px;
+    width: 100%; 
+    box-sizing: border-box; /* Prevents input overflow */
+    font-size: 16px; /* Prevents auto-zoom on mobile */
 }
 
-.rst-row { display: flex; gap: 10px; }
-.rst-row input { flex: 1; }
+.rst-row {
+    display: flex;
+    gap: 10px;
+}
+
+.rst-row input {
+    flex: 1;
+}
 
 button {
     background-color: #16a085;
@@ -54,10 +78,13 @@ button {
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    transition: 0.3s;
+    transition: background 0.3s ease;
+    font-size: 1.1em;
 }
 
-button:hover { background-color: #1abc9c; }
+button:hover {
+    background-color: #1abc9c;
+}
 
 .log-item {
     background-color: #2c3e50;
@@ -67,7 +94,23 @@ button:hover { background-color: #1abc9c; }
     border-left: 5px solid #16a085;
 }
 
+#connection-status {
+    font-size: 0.9em;
+    margin-top: 5px;
+}
+
+/* Mobile Responsiveness */
 @media (max-width: 768px) {
-    .main-content { grid-template-columns: 1fr; }
-    #map { height: 300px; order: -1; }
+    .main-content {
+        grid-template-columns: 1fr;
+    }
+
+    #map {
+        height: 250px;
+        order: -1; /* Puts map at top */
+    }
+
+    h1 {
+        font-size: 1.8em;
+    }
 }
