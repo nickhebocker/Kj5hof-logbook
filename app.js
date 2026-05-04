@@ -60,7 +60,7 @@ function render() {
   });
 }
 
-// ---------------- ADDRESS VALIDATION & SAVE ----------------
+// ---------------- THE SMART SAVE & ADDRESS CORRECTION ----------------
 document.getElementById("saveQSO").onclick = async function() {
   const btn = this;
   const call = document.getElementById("call").value.trim().toUpperCase();
@@ -81,27 +81,25 @@ document.getElementById("saveQSO").onclick = async function() {
       const data = JSON.parse(j.contents);
 
       if (data && data.status === "VALID") {
-        // CASE: We have the address but NO coordinates (The Apartment Problem)
+        // COORDINATES MISSING -> PROMPT USER TO VERIFY/FIX ADDRESS
         if (!data.location.latitude || data.location.latitude === "") {
           const rawAddr = `${data.address.line1}, ${data.address.line2}`;
           
-          // Programmatically strip APT, UNIT, #, etc. to create a "Fixed" version
-          let fixedAddr = data.address.line1
-            .replace(/(APPT|APT|UNIT|STE|SUITE|#).*$/i, "") // Removes from Apt onwards
-            .trim();
+          // Generate a suggested clean address (Remove Apt/Unit)
+          let fixedAddr = data.address.line1.replace(/(APPT|APT|UNIT|STE|SUITE|#).*$/i, "").trim();
           fixedAddr = `${fixedAddr}, ${data.address.line2}`;
 
-          // PROMPT: The "Did you mean?" experience
           const userChoice = prompt(
-            `Callsign found, but map coordinates are missing.\n\n` +
+            `Coordinates missing from FCC data.\n\n` +
             `Original: ${rawAddr}\n` +
             `Fixed: ${fixedAddr}\n\n` +
-            `Press OK to use the FIXED address, or type a custom address below:`, 
+            `Click OK to use the FIXED address, or edit it below:`, 
             fixedAddr
           );
 
           if (userChoice) {
-            btn.textContent = "Locating...";
+            btn.textContent = "Geocoding...";
+            // Use Nominatim to get Cords from the Clean Address
             const geoTarget = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(userChoice)}`;
             const geoResp = await fetch(geoTarget);
             const geoData = await geoResp.json();
@@ -110,18 +108,18 @@ document.getElementById("saveQSO").onclick = async function() {
               const res = geoData[0];
               latF.value = parseFloat(res.lat).toFixed(4);
               lonF.value = parseFloat(res.lon).toFixed(4);
-              gridF.value = latLonToGrid(res.lat, res.lon);
+              gridF.value = latLonToGrid(res.lat, res.lon); // Generate Grid automatically
               
               btn.textContent = "Verify & Save";
               btn.style.background = "#28a745";
             } else {
-              alert("Map couldn't find that address. Please enter details manually.");
+              alert("Map service failed. Please enter details manually.");
               btn.textContent = "Save Manual";
               btn.style.background = "#fd7e14";
             }
           }
         } else {
-          // Standard Case: Lat/Lon already provided by FCC
+          // Standard case: Data already had cords
           latF.value = data.location.latitude;
           lonF.value = data.location.longitude;
           gridF.value = data.location.gridsquare;
@@ -142,7 +140,7 @@ document.getElementById("saveQSO").onclick = async function() {
     return;
   }
 
-  // Final Save Logic
+  // Final Save
   const qso = {
     call, lat: parseFloat(latF.value) || null, lon: parseFloat(lonF.value) || null,
     band: document.getElementById("band").value.trim(), mode: document.getElementById("mode").value.trim(), grid: gridF.value.trim()
@@ -154,7 +152,7 @@ document.getElementById("saveQSO").onclick = async function() {
   tx.oncomplete = () => { resetForm(); loadAll(); };
 };
 
-// --- HELPER: Maidenhead Calculation ---
+// --- HELPER: Generate Maidenhead Grid from Lat/Lon ---
 function latLonToGrid(lat, lon) {
   lat = parseFloat(lat) + 90;
   lon = parseFloat(lon) + 180;
@@ -196,7 +194,7 @@ document.getElementById("deleteQSO").onclick = () => {
   tx.oncomplete = () => { resetForm(); loadAll(); };
 };
 
-// ---------------- EXPORT ----------------
+// ---------------- IO ----------------
 document.getElementById("exportADIF").onclick = () => {
   let out = "ADIF Export\n<EOH>\n";
   qsos.forEach(q => { out += `<CALL:${q.call.length}>${q.call}<BAND:${q.band.length}>${q.band}<MODE:${q.mode.length}>${q.mode}<EOR>\n`; });
