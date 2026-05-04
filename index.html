@@ -2,42 +2,46 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>KJ5HOF Logbook</title>
-    <link rel="stylesheet" href="style.css">
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
         <header>
             <h1>KJ5HOF Logbook</h1>
-            <div id="connection-status">Checking...</div>
+            <div id="connection-status">Checking Connection...</div>
         </header>
 
         <div class="main-content">
             <div class="form-container">
                 <form id="log-form">
-                    <input type="text" id="callsign" placeholder="Callsign" required>
+                    <input type="text" id="callsign" placeholder="Callsign" required autocomplete="off">
                     <input type="text" id="frequency" placeholder="Frequency">
                     <input type="text" id="mode" placeholder="Mode">
                     <div class="rst-row">
-                        <input type="text" id="rstSent" placeholder="Sent">
-                        <input type="text" id="rstRcvd" placeholder="Rcvd">
+                        <input type="text" id="rstSent" placeholder="Sent" value="59">
+                        <input type="text" id="rstRcvd" placeholder="Rcvd" value="59">
                     </div>
                     <textarea id="notes" placeholder="Notes"></textarea>
                     <button type="submit">Log Contact</button>
                 </form>
             </div>
+            
             <div id="map"></div>
         </div>
 
         <div class="log-entries-container">
             <h2>Recent Contacts</h2>
-            <div id="log-entries"></div>
+            <div id="log-entries">
+                </div>
         </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
     <script type="module" src="app.js"></script>
 </body>
 </html>
