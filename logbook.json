@@ -4,6 +4,15 @@
     "lat": 42.36,
     "lon": -71.05,
     "band": "20m",
-    "mode": "SSB"
+    "mode": "SSB",
+    "note": "Boston MA"
+  },
+  {
+    "call": "W6XYZ",
+    "lat": 34.05,
+    "lon": -118.24,
+    "band": "40m",
+    "mode": "FT8",
+    "note": "Los Angeles CA"
   }
 ]
