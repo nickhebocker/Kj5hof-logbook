@@ -12,39 +12,61 @@
 
 <header>
   <strong>KJ5HOF Log</strong>
-  <button id="darkToggle" style="width: auto; padding: 5px 10px;">🌓</button>
+  <div class="header-actions">
+    <button id="darkToggle" style="width: auto; padding: 5px 10px;">🌓</button>
+  </div>
 </header>
 
-<div id="map"></div>
+<div id="main-view">
+  <div id="map"></div>
 
-<section id="stats-bar">
-  <span id="stats">QSOs: 0</span>
-  <div>
-    <select id="bandFilter"><option value="">Bands</option></select>
-    <select id="modeFilter"><option value="">Modes</option></select>
+  <section id="editor">
+    <input id="call" placeholder="Callsign" autocomplete="off">
+    <div class="row">
+      <input id="band" placeholder="Band">
+      <input id="mode" placeholder="Mode">
+    </div>
+    <div class="row">
+      <input id="lat" placeholder="Lat">
+      <input id="lon" placeholder="Lon">
+      <input id="grid" placeholder="Grid">
+    </div>
+    <div class="actions">
+      <button id="saveQSO">Save QSO</button>
+      <button id="deleteQSO" style="display:none">Delete</button>
+      <button id="clearBtn">Clear / New</button>
+      <button id="showLogBtn" style="background: #20c997;">Log Book</button>
+    </div>
+  </section>
+</div>
+
+<div id="logbook-view" style="display:none">
+  <div class="view-header">
+    <h3>QSO Records</h3>
+    <button id="backToMap">Back to Map</button>
   </div>
-</section>
-
-<section id="editor">
-  <input id="call" placeholder="Callsign" autocomplete="off">
-
-  <div class="row">
-    <input id="band" placeholder="Band">
-    <input id="mode" placeholder="Mode">
+  
+  <div class="table-container">
+    <table id="qsoTable">
+      <thead>
+        <tr>
+          <th>Callsign</th>
+          <th>Band</th>
+          <th>Mode</th>
+          <th>Grid</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
   </div>
 
-  <div class="row">
-    <input id="lat" placeholder="Lat">
-    <input id="lon" placeholder="Lon">
-    <input id="grid" placeholder="Grid">
+  <div class="log-actions">
+    <button id="exportADIF">Export ADIF</button>
+    <button id="backupBtn" style="background: #6c757d;">Backup JSON</button>
+    <button id="restoreBtn" style="background: #6c757d;">Restore JSON</button>
+    <input type="file" id="restoreInput" accept=".json" style="display:none">
   </div>
-
-  <div class="actions">
-    <button id="saveQSO">Save QSO</button>
-    <button id="deleteQSO" style="display:none">Delete</button>
-    <button id="clearBtn">Clear / New</button>
-  </div>
-</section>
+</div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
