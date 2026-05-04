@@ -1,24 +1,3 @@
-// ---------------- NAVIGATION ----------------
-function toggleView(showLog) {
-  const main = document.getElementById("main-view");
-  const log = document.getElementById("logbook-view");
-  if (showLog) {
-    main.style.display = "none";
-    log.style.display = "block";
-  } else {
-    main.style.display = "block";
-    log.style.display = "none";
-  }
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("showLogBtn").onclick = () => toggleView(true);
-  document.getElementById("backToMap").onclick = () => toggleView(false);
-  document.getElementById("clearBtn").onclick = resetForm;
-  document.getElementById("darkToggle").onclick = () => document.body.classList.toggle("dark");
-});
-
-// ---------------- MAP & DB SETUP ----------------
 const map = L.map("map").setView([30, 0], 2);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OSM" }).addTo(map);
 const cluster = L.markerClusterGroup();
@@ -26,6 +5,7 @@ map.addLayer(cluster);
 
 let db, qsos = [], selectedId = null, lookupAttempted = false;
 
+// ---------------- DATABASE ----------------
 const dbReq = indexedDB.open("KJ5HOF_Logbook", 2);
 dbReq.onupgradeneeded = e => {
   db = e.target.result;
@@ -60,7 +40,17 @@ function render() {
   });
 }
 
-// ---------------- 404 / TIMEOUT ERROR FIX ----------------
+// ---------------- NAVIGATION ----------------
+function toggleView(showLog) {
+  document.getElementById("main-view").style.display = showLog ? "none" : "block";
+  document.getElementById("logbook-view").style.display = showLog ? "block" : "none";
+}
+document.getElementById("showLogBtn").onclick = () => toggleView(true);
+document.getElementById("backToMap").onclick = () => toggleView(false);
+document.getElementById("darkToggle").onclick = () => document.body.classList.toggle("dark");
+document.getElementById("clearBtn").onclick = resetForm;
+
+// ---------------- THE SMART SAVE (CORS FIX) ----------------
 document.getElementById("saveQSO").onclick = async function() {
   const btn = this;
   const call = document.getElementById("call").value.trim().toUpperCase();
@@ -68,37 +58,36 @@ document.getElementById("saveQSO").onclick = async function() {
 
   if (!call) return alert("Enter Callsign");
 
-  // Step 1: Lookup (Handles 404, Timeout, and Blocks)
+  // Attempt lookup if fields are empty
   if (!latF.value && !lookupAttempted && !selectedId) {
     btn.textContent = "Searching...";
     btn.disabled = true;
 
     try {
-      // Use AllOrigins with a cache-buster to prevent immediate 404 loops
+      // Use AllOrigins as a reliable middleman for callook.info
       const target = `https://callook.info/${call}/json`;
-      const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(target)}&_=${Date.now()}`;
+      const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(target)}`;
       
       const r = await fetch(proxy);
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      if (!r.ok) throw new Error(`Network response was ${r.status}`);
       
-      const j = await r.json(); 
+      const j = await r.json();
       const data = JSON.parse(j.contents);
 
       if (data && data.status === "VALID") {
         latF.value = data.location.latitude || "";
         lonF.value = data.location.longitude || "";
         gridF.value = data.location.gridsquare || "";
-        btn.textContent = "Confirm & Save";
+        btn.textContent = "Verify & Save";
         btn.style.background = "#28a745";
       } else {
-        // This handles when the site is found but your specific call is missing
-        alert("Not Found: This callsign isn't in the FCC database yet.");
-        btn.textContent = "Save Manual";
+        alert("Not Found: Callsign not in FCC database.");
+        btn.textContent = "Manual Save";
         btn.style.background = "#fd7e14";
       }
     } catch (e) { 
-      // This handles 404, Timeouts (408), and "Failed to Fetch"
-      alert("Search Interrupted!\nReason: " + e.message + "\n\nYou can still save the QSO manually.");
+      // If the proxy fails, we let the user know and proceed to manual entry
+      alert("Lookup Interrupted: " + e.message + "\n\nThis happens often on mobile networks. Please enter details manually.");
       btn.textContent = "Save Anyway";
       btn.style.background = "#6c757d";
     }
@@ -108,19 +97,17 @@ document.getElementById("saveQSO").onclick = async function() {
     return;
   }
 
-  // Step 2: Save to DB
+  // Save to Database
   const qso = {
     call, lat: parseFloat(latF.value) || null, lon: parseFloat(lonF.value) || null,
     band: document.getElementById("band").value.trim(), mode: document.getElementById("mode").value.trim(), grid: gridF.value.trim()
   };
   if (selectedId) qso.id = selectedId;
-
   const tx = db.transaction("qsos", "readwrite");
   tx.objectStore("qsos").put(qso);
   tx.oncomplete = () => { resetForm(); loadAll(); };
 };
 
-// ---------------- HELPERS ----------------
 function resetForm() {
   selectedId = null; lookupAttempted = false;
   document.querySelectorAll("#editor input").forEach(i => i.value = "");
@@ -148,23 +135,13 @@ document.getElementById("deleteQSO").onclick = () => {
   tx.oncomplete = () => { resetForm(); loadAll(); };
 };
 
-// ---------------- EXPORTS ----------------
+// ---------------- IO ----------------
 document.getElementById("exportADIF").onclick = () => {
   let out = "ADIF Export\n<EOH>\n";
   qsos.forEach(q => { out += `<CALL:${q.call.length}>${q.call}<BAND:${q.band.length}>${q.band}<MODE:${q.mode.length}>${q.mode}<EOR>\n`; });
-  const blob = new Blob([out], {type: "text/plain"});
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "log.adi"; a.click();
+  download(out, "log.adi", "text/plain");
 };
-
-document.getElementById("backupBtn").onclick = () => {
-  const blob = new Blob([JSON.stringify(qsos)], {type: "application/json"});
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "backup.json"; a.click();
-};
-
+document.getElementById("backupBtn").onclick = () => download(JSON.stringify(qsos, null, 2), "log_backup.json", "application/json");
 document.getElementById("restoreBtn").onclick = () => document.getElementById("restoreInput").click();
 document.getElementById("restoreInput").onchange = e => {
   const reader = new FileReader();
@@ -176,3 +153,8 @@ document.getElementById("restoreInput").onchange = e => {
   };
   reader.readAsText(e.target.files[0]);
 };
+function download(c, f, t) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([c], { type: t }));
+  a.download = f; a.click();
+}
