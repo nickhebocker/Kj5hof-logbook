@@ -1,65 +1,80 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, serverTimestamp, query, where, getDocs } from "let logbookData = JSON.parse(localStorage.getItem('kj5hof_logs')) || [];
+let logbookData = JSON.parse(localStorage.getItem('kj5hof_logs')) || [];
 let editingIndex = -1;
 
 const logForm = document.getElementById('logForm');
 const logTableBody = document.querySelector('#logTable tbody');
 const modal = document.getElementById('logbookModal');
+const submitBtn = document.getElementById('submitBtn');
 
-// Initialize view
+// Initialize
 updateTable();
 
-// Handle Form Submission (Add or Update)
+// Handle Form Submission
 logForm.addEventListener('submit', function(e) {
     e.preventDefault();
 
-    const newEntry = {
+    const entry = {
         date: document.getElementById('date').value,
-        time: document.getElementById('time').value,
+        timeOn: document.getElementById('timeOn').value,
+        timeOff: document.getElementById('timeOff').value,
         callsign: document.getElementById('callsign').value.toUpperCase(),
-        frequency: document.getElementById('frequency').value,
+        name: document.getElementById('name').value,
+        freq: document.getElementById('freq').value,
+        band: document.getElementById('band').value,
         mode: document.getElementById('mode').value,
         rstSent: document.getElementById('rstSent').value,
         rstRcvd: document.getElementById('rstRcvd').value,
-        notes: document.getElementById('notes').value
+        power: document.getElementById('power').value,
+        location: document.getElementById('location').value,
+        state: document.getElementById('state').value,
+        country: document.getElementById('country').value,
+        gridsquare: document.getElementById('gridsquare').value,
+        comment: document.getElementById('comment').value
     };
 
     if (editingIndex === -1) {
-        // Add new
-        logbookData.push(newEntry);
+        logbookData.unshift(entry); // New entries at top
     } else {
-        // Update existing
-        logbookData[editingIndex] = newEntry;
+        logbookData[editingIndex] = entry;
         editingIndex = -1;
-        document.getElementById('submitBtn').innerText = 'Save Contact';
+        submitBtn.innerText = 'Save Contact';
+        submitBtn.style.backgroundColor = '#28a745';
     }
 
-    saveAndRefresh();
+    saveData();
     logForm.reset();
 });
 
-function saveAndRefresh() {
+function saveData() {
     localStorage.setItem('kj5hof_logs', JSON.stringify(logbookData));
     updateTable();
 }
 
 function updateTable() {
+    if (!logTableBody) return;
     logTableBody.innerHTML = '';
     
     logbookData.forEach((log, index) => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${log.date}</td>
-            <td>${log.time}</td>
-            <td>${log.callsign}</td>
-            <td>${log.frequency}</td>
-            <td>${log.mode}</td>
-            <td>${log.rstSent}</td>
-            <td>${log.rstRcvd}</td>
-            <td>${log.notes}</td>
             <td>
                 <button class="edit-btn" onclick="editEntry(${index})">Edit</button>
             </td>
+            <td>${log.date}</td>
+            <td>${log.timeOn}</td>
+            <td>${log.callsign}</td>
+            <td>${log.name}</td>
+            <td>${log.freq}</td>
+            <td>${log.band}</td>
+            <td>${log.mode}</td>
+            <td>${log.rstSent}</td>
+            <td>${log.rstRcvd}</td>
+            <td>${log.power}</td>
+            <td>${log.location}</td>
+            <td>${log.state}</td>
+            <td>${log.country}</td>
+            <td>${log.gridsquare}</td>
+            <td>${log.comment}</td>
         `;
         logTableBody.appendChild(row);
     });
@@ -68,153 +83,41 @@ function updateTable() {
 function editEntry(index) {
     const log = logbookData[index];
     
-    // Fill form with existing data
     document.getElementById('date').value = log.date;
-    document.getElementById('time').value = log.time;
+    document.getElementById('timeOn').value = log.timeOn;
+    document.getElementById('timeOff').value = log.timeOff;
     document.getElementById('callsign').value = log.callsign;
-    document.getElementById('frequency').value = log.frequency;
+    document.getElementById('name').value = log.name;
+    document.getElementById('freq').value = log.freq;
+    document.getElementById('band').value = log.band;
     document.getElementById('mode').value = log.mode;
     document.getElementById('rstSent').value = log.rstSent;
     document.getElementById('rstRcvd').value = log.rstRcvd;
-    document.getElementById('notes').value = log.notes;
+    document.getElementById('power').value = log.power;
+    document.getElementById('location').value = log.location;
+    document.getElementById('state').value = log.state;
+    document.getElementById('country').value = log.country;
+    document.getElementById('gridsquare').value = log.gridsquare;
+    document.getElementById('comment').value = log.comment;
 
-    // Set state to editing
     editingIndex = index;
-    document.getElementById('submitBtn').innerText = 'Update Entry';
+    submitBtn.innerText = 'Update Entry #' + (logbookData.length - index);
+    submitBtn.style.backgroundColor = '#ffc107';
     
-    // Close modal if it was open
     closeModal();
-    window.scrollTo(0, 0);
+    window.scrollTo({top: 0, behavior: 'smooth'});
 }
 
 function openModal() {
     modal.style.display = 'block';
-    updateTable();
+    document.body.style.overflow = 'hidden'; // Prevent background scroll
 }
 
 function closeModal() {
     modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
 }
 
-// Close modal if user clicks outside of it
 window.onclick = function(event) {
-    if (event.target == modal) {
-        closeModal();
-    }
-};
-www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyCuPlkWdIBTGsmpEQdmy0wTqrVJadL29kE",
-    authDomain: "logbook-75575.firebaseapp.com",
-    projectId: "logbook-75575",
-    storageBucket: "logbook-75575.firebasestorage.app",
-    messagingSenderId: "700088204207",
-    appId: "1:700088204207:web:33b3c5cc221f02a2b2cd5a"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-const LOCAL_STORAGE_KEY = 'kj5hof_logs';
-
-// UI Elements
-const logModal = document.getElementById('logbook-modal');
-const logGridBody = document.getElementById('log-grid-body');
-
-// Auth Switch
-onAuthStateChanged(auth, (user) => {
-    document.getElementById('login-overlay').style.display = user ? 'none' : 'flex';
-    document.getElementById('app-container').style.display = user ? 'block' : 'none';
-});
-
-// Login/Logout
-document.getElementById('login-btn').onclick = () => {
-    const email = document.getElementById('login-email').value;
-    const pass = document.getElementById('login-pass').value;
-    signInWithEmailAndPassword(auth, email, pass).catch(e => alert(e.message));
-};
-document.getElementById('logout-btn').onclick = () => signOut(auth);
-
-// Modal Controls
-document.getElementById('open-logbook-btn').onclick = () => {
-    renderGrid();
-    logModal.style.display = 'block';
-};
-document.querySelector('.close-logbook').onclick = () => logModal.style.display = 'none';
-
-// Map
-const map = L.map('map').setView([31.9686, -99.9018], 6);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-
-const getLocalLogs = () => JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)) || [];
-
-// Delete Logic
-window.deleteEntry = async (id) => {
-    if (!confirm("Delete this entry?")) return;
-    let logs = getLocalLogs().filter(l => l.id !== id);
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(logs));
-    renderGrid();
-    
-    if (navigator.onLine) {
-        const q = query(collection(db, "logs"), where("id", "==", id));
-        const snap = await getDocs(q);
-        snap.forEach(d => deleteDoc(d.ref));
-    }
-};
-
-// Inline Edit Logic
-window.editEntry = async (id, field, value) => {
-    let logs = getLocalLogs();
-    const idx = logs.findIndex(l => l.id === id);
-    if (idx !== -1) {
-        logs[idx][field] = value;
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(logs));
-        
-        if (navigator.onLine) {
-            const q = query(collection(db, "logs"), where("id", "==", id));
-            const snap = await getDocs(q);
-            snap.forEach(d => updateDoc(d.ref, { [field]: value }));
-        }
-    }
-};
-
-function renderGrid() {
-    const logs = getLocalLogs();
-    logGridBody.innerHTML = logs.map(log => `
-        <tr>
-            <td>${new Date(log.timestamp).toLocaleString()}</td>
-            <td contenteditable="true" onblur="editEntry(${log.id}, 'callsign', this.innerText)">${log.callsign}</td>
-            <td contenteditable="true" onblur="editEntry(${log.id}, 'frequency', this.innerText)">${log.frequency}</td>
-            <td contenteditable="true" onblur="editEntry(${log.id}, 'mode', this.innerText)">${log.mode}</td>
-            <td contenteditable="true" onblur="editEntry(${log.id}, 'notes', this.innerText)">${log.notes}</td>
-            <td><button class="del-btn" onclick="deleteEntry(${log.id})">Delete</button></td>
-        </tr>
-    `).join('');
-}
-
-// Form Submit
-document.getElementById('log-form').onsubmit = async (e) => {
-    e.preventDefault();
-    const entry = {
-        id: Date.now(),
-        timestamp: new Date().toISOString(),
-        callsign: document.getElementById('callsign').value.toUpperCase(),
-        frequency: document.getElementById('frequency').value,
-        mode: document.getElementById('mode').value,
-        rstSent: document.getElementById('rstSent').value,
-        rstRcvd: document.getElementById('rstRcvd').value,
-        notes: document.getElementById('notes').value
-    };
-    
-    let logs = getLocalLogs();
-    logs.unshift(entry);
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(logs));
-    
-    if (navigator.onLine) {
-        await addDoc(collection(db, "logs"), { ...entry, createdAt: serverTimestamp(), uid: auth.currentUser.uid });
-    }
-    e.target.reset();
-    alert("Saved!");
+    if (event.target == modal) closeModal();
 };
