@@ -29,3 +29,4 @@ th { background: var(--panel); position: sticky; top: 0; z-index: 2; }
 tbody tr:active { background: var(--accent); color: white; }
 
 #backToMap { width: auto; padding: 8px 15px; background: #6c757d; }
+ 
