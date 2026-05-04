@@ -2,54 +2,56 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>KJ5HOF Logbook</title>
-
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
   <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
+
 <header>
-  <h1>KJ5HOF Logbook</h1>
+  <h1>KJ5HOF Log</h1>
   <div class="toggles">
-    <button id="darkToggle">Dark Mode</button>
-    <button id="backupBtn">Backup JSON</button>
-    <label class="file-label">Restore: <input type="file" id="restoreInput" accept=".json"></label>
+    <button id="darkToggle">🌓 Theme</button>
+    <button id="backupBtn">💾 Backup</button>
+    <input type="file" id="restoreInput" accept=".json" style="display:none">
+    <button onclick="document.getElementById('restoreInput').click()">📂 Restore</button>
   </div>
 </header>
 
-<section id="controls">
-  <select id="bandFilter"></select>
-  <select id="modeFilter"></select>
-  <button id="zoomFiltered">Zoom to Selection</button>
-  <span id="stats"></span>
-</section>
-
-<section id="editor">
-  <div class="input-group">
-    <input id="call" placeholder="Callsign (Tab to lookup)">
-    <input id="grid" placeholder="Grid">
-    <input id="lat" placeholder="Latitude">
-    <input id="lon" placeholder="Longitude">
-    <input id="band" placeholder="Band (e.g. 20m)">
-    <input id="mode" placeholder="Mode (e.g. FT8)">
+<section id="stats-bar">
+  <span id="stats">Loading...</span>
+  <div class="filters">
+    <select id="bandFilter"><option value="">All Bands</option></select>
+    <select id="modeFilter"><option value="">All Modes</option></select>
   </div>
-  <div class="button-group">
-    <button id="saveQSO" style="background: #28a745;">Save QSO</button>
-    <button id="deleteQSO" style="background: #dc3545;">Delete Selected</button>
-  </div>
-</section>
-
-<section id="io">
-  <strong>Data Tools:</strong>
-  <button id="exportADIF">Export ADIF</button>
-  <button id="exportCSV">Export CSV</button>
-  <label class="file-label">Import ADIF: <input type="file" id="importADIF" accept=".adi,.adif"></label>
 </section>
 
 <div id="map"></div>
+
+<section id="editor">
+  <input id="call" placeholder="Callsign" autocomplete="off">
+  <div class="row">
+    <input id="band" placeholder="Band">
+    <input id="mode" placeholder="Mode">
+  </div>
+  <div class="row">
+    <input id="lat" placeholder="Lat">
+    <input id="lon" placeholder="Lon">
+    <input id="grid" placeholder="Grid">
+  </div>
+  <div class="actions">
+    <button id="saveQSO">Save QSO</button>
+    <button id="deleteQSO" style="background:#dc3545; display:none">Delete</button>
+    <button id="clearBtn" style="background:#6c757d">Clear</button>
+  </div>
+</section>
+
+<section id="export-tools">
+  <button id="exportADIF">Export ADIF</button>
+  <button id="zoomFiltered">Center Map</button>
+</section>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
