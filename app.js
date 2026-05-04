@@ -1,219 +1,139 @@
-// ---------------- NAVIGATION ----------------
-function toggleView(showLog) {
-  const main = document.getElementById("main-view");
-  const log = document.getElementById("logbook-view");
-  if (showLog) {
-    main.style.display = "none";
-    log.style.display = "block";
-  } else {
-    main.style.display = "block";
-    log.style.display = "none";
-  }
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+// --- FIREBASE SETUP ---
+const firebaseConfig = {
+    apiKey: "AIzaSyCuPlkWdIBTGsmpEQdmy0wTqrVJadL29kE",
+    authDomain: "logbook-75575.firebaseapp.com",
+    projectId: "logbook-75575",
+    storageBucket: "logbook-75575.firebasestorage.app",
+    messagingSenderId: "700088204207",
+    appId: "1:700088204207:web:33b3c5cc221f02a2b2cd5a"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const LOCAL_STORAGE_KEY = 'kj5hof_log_data_v1';
+
+// --- DOM ELEMENTS ---
+const logForm = document.getElementById('log-form');
+const logList = document.getElementById('log-entries');
+const statusEl = document.getElementById('connection-status');
+
+// --- APP LOGIC ---
+
+function getLocalLogs() {
+    return JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)) || [];
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("showLogBtn").onclick = () => toggleView(true);
-  document.getElementById("backToMap").onclick = () => toggleView(false);
-  document.getElementById("clearBtn").onclick = resetForm;
-  document.getElementById("darkToggle").onclick = () => document.body.classList.toggle("dark");
+function renderLogs() {
+    const logs = getLocalLogs();
+    logList.innerHTML = '';
+    
+    if (logs.length === 0) {
+        logList.innerHTML = '<p class="empty-msg">No logs saved yet.</p>';
+        return;
+    }
+
+    logs.forEach(log => {
+        const div = document.createElement('div');
+        div.className = `log-card ${log.cloudSynced ? 'synced' : 'pending'}`;
+        div.innerHTML = `
+            <div class="card-top">
+                <span class="card-call">${log.callsign}</span>
+                <span class="card-mode">${log.frequency} | ${log.mode}</span>
+                <span class="sync-indicator">${log.cloudSynced ? '✓' : '☁'}</span>
+            </div>
+            <div class="card-rst">RST: ${log.rstSent}/${log.rstRcvd}</div>
+            <div class="card-notes">${log.notes}</div>
+            <div class="card-time">${new Date(log.timestamp).toLocaleTimeString()} - ${new Date(log.timestamp).toLocaleDateString()}</div>
+        `;
+        logList.appendChild(div);
+    });
+}
+
+async function syncEntryToFirebase(entry) {
+    if (!navigator.onLine) return;
+
+    try {
+        await addDoc(collection(db, "logs"), {
+            callsign: entry.callsign,
+            frequency: entry.frequency,
+            mode: entry.mode,
+            rstSent: entry.rstSent,
+            rstRcvd: entry.rstRcvd,
+            notes: entry.notes,
+            timestamp: entry.timestamp,
+            createdAt: serverTimestamp()
+        });
+
+        // Update local status after successful cloud save
+        const logs = getLocalLogs();
+        const index = logs.findIndex(l => l.id === entry.id);
+        if (index !== -1) {
+            logs[index].cloudSynced = true;
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(logs));
+            renderLogs();
+        }
+    } catch (error) {
+        console.error("Sync error:", error);
+    }
+}
+
+async function backgroundSync() {
+    if (!navigator.onLine) return;
+    const logs = getLocalLogs();
+    const unsynced = logs.filter(l => !l.cloudSynced);
+    for (const log of unsynced) {
+        await syncEntryToFirebase(log);
+    }
+}
+
+// --- EVENT HANDLERS ---
+
+logForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const newEntry = {
+        id: Date.now(),
+        timestamp: new Date().toISOString(),
+        callsign: document.getElementById('callsign').value.toUpperCase(),
+        frequency: document.getElementById('frequency').value,
+        mode: document.getElementById('mode').value,
+        rstSent: document.getElementById('rstSent').value,
+        rstRcvd: document.getElementById('rstRcvd').value,
+        notes: document.getElementById('notes').value,
+        cloudSynced: false
+    };
+
+    // 1. Save Locally
+    const logs = getLocalLogs();
+    logs.unshift(newEntry);
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(logs));
+    renderLogs();
+    
+    // 2. Clear Form
+    logForm.reset();
+    document.getElementById('callsign').focus();
+
+    // 3. Try Firebase
+    await syncEntryToFirebase(newEntry);
 });
 
-// ---------------- MAP & DB SETUP ----------------
-const map = L.map("map").setView([30, 0], 2);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OSM" }).addTo(map);
-const cluster = L.markerClusterGroup();
-map.addLayer(cluster);
-
-let db, qsos = [], selectedId = null, lookupAttempted = false;
-
-const dbReq = indexedDB.open("KJ5HOF_Logbook", 2);
-dbReq.onupgradeneeded = e => {
-  db = e.target.result;
-  if (!db.objectStoreNames.contains("qsos")) db.createObjectStore("qsos", { keyPath: "id", autoIncrement: true });
-};
-dbReq.onsuccess = e => { db = e.target.result; loadAll(); };
-
-function loadAll() {
-  if (!db) return;
-  const tx = db.transaction("qsos", "readonly");
-  tx.objectStore("qsos").getAll().onsuccess = e => {
-    qsos = e.target.result;
-    render();
-  };
-}
-
-function render() {
-  cluster.clearLayers();
-  const tableBody = document.querySelector("#qsoTable tbody");
-  if (!tableBody) return;
-  tableBody.innerHTML = "";
-  qsos.forEach(q => {
-    if (q.lat && q.lon) {
-      const m = L.circleMarker([q.lat, q.lon], { radius: 10, color: "red" });
-      m.bindPopup(`<b>${q.call}</b><br>${q.band} ${q.mode}`);
-      m.on("click", () => selectQSO(q));
-      cluster.addLayer(m);
-    }
-    const row = tableBody.insertRow();
-    row.innerHTML = `<td>${q.call}</td><td>${q.band}</td><td>${q.mode}</td><td>${q.grid || ''}</td>`;
-    row.onclick = () => { selectQSO(q); toggleView(false); };
-  });
-}
-
-// ---------------- THE SEARCH ENGINE ----------------
-document.getElementById("saveQSO").onclick = async function() {
-  const btn = this;
-  const callInput = document.getElementById("call");
-  const call = callInput.value.trim().toUpperCase();
-  const latF = document.getElementById("lat"), lonF = document.getElementById("lon"), gridF = document.getElementById("grid");
-
-  if (!call) return alert("Enter Callsign");
-
-  if (!latF.value && !lookupAttempted && !selectedId) {
-    btn.textContent = "Searching...";
-    btn.disabled = true;
-
-    let data = null;
-    let errorLog = "";
-
-    // TRY 1: Direct Fetch (Fastest, works if Callook allows CORS)
-    try {
-      const r = await fetch(`https://callook.info/${call}/json`);
-      if (r.ok) data = await r.json();
-    } catch (e) { errorLog += "Direct: Blocked. "; }
-
-    // TRY 2: Backup Proxy (Codetabs)
-    if (!data) {
-      try {
-        const r = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent('https://callook.info/'+call+'/json')}`);
-        if (r.ok) data = await r.json();
-      } catch (e) { errorLog += "Proxy: Failed. "; }
-    }
-
-    if (data && data.status === "VALID") {
-      // IF WE HAVE DATA BUT NO COORDINATES (The Apt # Issue)
-      if (!data.location.latitude || data.location.latitude === "") {
-        const rawAddr = `${data.address.line1}, ${data.address.line2}`;
-        let fixedAddr = data.address.line1.replace(/(APPT|APT|UNIT|STE|SUITE|#).*$/i, "").trim();
-        fixedAddr = `${fixedAddr}, ${data.address.line2}`;
-
-        const userChoice = prompt(
-          `Callsign found, but map coordinates are missing.\n\n` +
-          `Original: ${rawAddr}\n` +
-          `Fixed: ${fixedAddr}\n\n` +
-          `Press OK to generate coordinates from the FIXED address:`, 
-          fixedAddr
-        );
-
-        if (userChoice) {
-          btn.textContent = "Locating House...";
-          try {
-            const geoTarget = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(userChoice)}`;
-            const geoResp = await fetch(geoTarget);
-            const geoData = await geoResp.json();
-            if (geoData && geoData.length > 0) {
-              const res = geoData[0];
-              latF.value = parseFloat(res.lat).toFixed(4);
-              lonF.value = parseFloat(res.lon).toFixed(4);
-              gridF.value = latLonToGrid(res.lat, res.lon);
-              btn.textContent = "Confirm & Save";
-              btn.style.background = "#28a745";
-            }
-          } catch (e) { alert("Map lookup failed. Entering manual mode."); }
-        }
-      } else {
-        // Standard Case: Data was perfect
-        latF.value = data.location.latitude;
-        lonF.value = data.location.longitude;
-        gridF.value = data.location.gridsquare;
-        btn.textContent = "Confirm & Save";
-        btn.style.background = "#28a745";
-      }
+function updateStatus() {
+    if (navigator.onLine) {
+        statusEl.innerText = "ONLINE";
+        statusEl.className = "online";
+        backgroundSync();
     } else {
-      // FINAL FAILURE: Show why
-      alert(`Search Failed!\n\n${errorLog}\n\nReason: Your mobile carrier or browser is shielding the connection. Please fill Lat/Lon/Grid manually this once!`);
-      btn.textContent = "Save Anyway";
-      btn.style.background = "#6c757d";
+        statusEl.innerText = "OFFLINE (Local Mode)";
+        statusEl.className = "offline";
     }
-    
-    lookupAttempted = true; 
-    btn.disabled = false;
-    return;
-  }
-
-  // Final Save Logic
-  const qso = {
-    call, lat: parseFloat(latF.value) || null, lon: parseFloat(lonF.value) || null,
-    band: document.getElementById("band").value.trim(), mode: document.getElementById("mode").value.trim(), grid: gridF.value.trim()
-  };
-  if (selectedId) qso.id = selectedId;
-  const tx = db.transaction("qsos", "readwrite");
-  tx.objectStore("qsos").put(qso);
-  tx.oncomplete = () => { resetForm(); loadAll(); };
-};
-
-// --- HELPER: Grid Calc ---
-function latLonToGrid(lat, lon) {
-  lat = parseFloat(lat) + 90;
-  lon = parseFloat(lon) + 180;
-  const grid = 
-    String.fromCharCode(65 + Math.floor(lon / 20)) +
-    String.fromCharCode(65 + Math.floor(lat / 10)) +
-    Math.floor((lon % 20) / 2).toString() +
-    Math.floor(lat % 10).toString() +
-    String.fromCharCode(97 + Math.floor((lon % 2) * 12)) +
-    String.fromCharCode(97 + Math.floor((lat % 1) * 24));
-  return grid.substring(0, 6).toUpperCase();
 }
 
-// ---------------- OTHERS ----------------
-function resetForm() {
-  selectedId = null; lookupAttempted = false;
-  document.querySelectorAll("#editor input").forEach(i => i.value = "");
-  const b = document.getElementById("saveQSO");
-  b.textContent = "Save QSO"; b.style.background = "";
-  document.getElementById("deleteQSO").style.display = "none";
-}
+window.addEventListener('online', updateStatus);
+window.addEventListener('offline', updateStatus);
 
-function selectQSO(q) {
-  selectedId = q.id; lookupAttempted = true;
-  document.getElementById("call").value = q.call;
-  document.getElementById("lat").value = q.lat || "";
-  document.getElementById("lon").value = q.lon || "";
-  document.getElementById("band").value = q.band || "";
-  document.getElementById("mode").value = q.mode || "";
-  document.getElementById("grid").value = q.grid || "";
-  document.getElementById("saveQSO").textContent = "Update Entry";
-  document.getElementById("deleteQSO").style.display = "block";
-}
-
-document.getElementById("deleteQSO").onclick = () => {
-  if (!selectedId || !confirm("Delete?")) return;
-  const tx = db.transaction("qsos", "readwrite");
-  tx.objectStore("qsos").delete(selectedId);
-  tx.oncomplete = () => { resetForm(); loadAll(); };
-};
-
-// ---------------- IO ----------------
-document.getElementById("exportADIF").onclick = () => {
-  let out = "ADIF Export\n<EOH>\n";
-  qsos.forEach(q => { out += `<CALL:${q.call.length}>${q.call}<BAND:${q.band.length}>${q.band}<MODE:${q.mode.length}>${q.mode}<EOR>\n`; });
-  download(out, "log.adi", "text/plain");
-};
-document.getElementById("backupBtn").onclick = () => download(JSON.stringify(qsos), "backup.json", "application/json");
-document.getElementById("restoreBtn").onclick = () => document.getElementById("restoreInput").click();
-document.getElementById("restoreInput").onchange = e => {
-  const reader = new FileReader();
-  reader.onload = () => {
-    const data = JSON.parse(reader.result);
-    const tx = db.transaction("qsos", "readwrite");
-    data.forEach(q => { delete q.id; tx.objectStore("qsos").add(q); });
-    tx.oncomplete = loadAll;
-  };
-  reader.readAsText(e.target.files[0]);
-};
-function download(c, f, t) {
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([c], { type: t }));
-  a.download = f; a.click();
-}
+// Boot app
+updateStatus();
+renderLogs();
