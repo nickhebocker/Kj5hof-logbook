@@ -1,15 +1,17 @@
-// Firebase configuration template
-
 const firebaseConfig = {
-    apiKey: '', // Your API key
-    authDomain: '', // Your Auth domain
-    projectId: '', // Your Project ID
-    storageBucket: '', // Your Storage Bucket
-    messagingSenderId: '', // Your Messaging Sender ID
-    appId: '' // Your App ID
+  apiKey: "AIzaSyCuPlkWdIBTGsmpEQdmy0wTqrVJadL29kE",
+  authDomain: "logbook-75575.firebaseapp.com",
+  projectId: "logbook-75575",
+  storageBucket: "logbook-75575.firebasestorage.app",
+  messagingSenderId: "700088204207",
+  appId: "1:700088204207:web:33b3c5cc221f02a2b2cd5a"
 };
 
 // Initialize Firebase
-firebase.initializeApp(firebaseConfig);
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
-export default firebaseConfig;
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const db = getFirestore(app);
