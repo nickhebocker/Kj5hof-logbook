@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Command Center - RadioLog</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body class="main-layout">
+    <header class="hud">
+        <div class="status-info">
+            <span id="user-display">Guest Mode</span>
+            <span id="utc-clock">00:00:00 UTC</span>
+        </div>
+        <nav>
+            <a href="main.html" class="active">Log</a>
+            <a href="history.html">History</a>
+            <button id="logout-btn">Exit</button>
+        </nav>
+    </header>
+
+    <div id="offline-banner" class="banner hidden">OFFLINE MODE - Data stored locally</div>
+
+    <main class="grid-container">
+        <section class="form-section">
+            <form id="log-form">
+                <div class="row">
+                    <div class="input-group">
+                        <label>Target Callsign</label>
+                        <input type="text" id="target-call" class="mono" required>
+                    </div>
+                    <div id="hamdb-card" class="data-card">
+                        <small>Lookup Result:</small>
+                        <div id="remote-info">--</div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="input-group">
+                        <label>RST Sent</label>
+                        <input type="number" id="rst-s" value="59">
+                    </div>
+                    <div class="input-group">
+                        <label>RST Recv</label>
+                        <input type="number" id="rst-r" value="59">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="input-group">
+                        <label>Freq (MHz)</label>
+                        <input type="text" id="freq" class="mono">
+                    </div>
+                    <div class="input-group">
+                        <label>Mode</label>
+                        <select id="mode">
+                            <option value="SSB">SSB</option>
+                            <option value="CW">CW</option>
+                            <option value="FT8">FT8</option>
+                            <option value="FM">FM</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Notes</label>
+                    <textarea id="notes"></textarea>
+                </div>
+
+                <button type="submit" class="btn-primary log-btn">LOG CONTACT</button>
+            </form>
+        </section>
+
+        <section class="map-section">
+            <div id="map"></div>
+        </section>
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
