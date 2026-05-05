@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Archives - RadioLog</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Basic layout styles to ensure visibility */
+        .table-container { margin-top: 20px; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        .hidden { display: none; }
+        .btn-amber { background-color: #ffbf00; color: black; border: none; padding: 8px 16px; cursor: pointer; border-radius: 4px; }
+        .del-btn { background-color: #ff4757; color: white; border: none; padding: 4px 8px; cursor: pointer; border-radius: 4px; }
+    </style>
 </head>
 <body class="history-layout">
     <header class="hud">
@@ -19,8 +28,8 @@
         <input type="text" id="search-bar" placeholder="Filter by Callsign/Date...">
         <div class="actions">
             <button id="sync-btn" class="btn-amber hidden">Sync to Cloud</button>
-            <button onclick="exportADIF()">Export ADIF</button>
-            <button onclick="exportCSV()">Export CSV</button>
+            <button id="export-adif">Export ADIF</button>
+            <button id="export-csv">Export CSV</button>
         </div>
     </div>
 
@@ -41,6 +50,6 @@
         </table>
     </div>
 
-    <script src="app.js"></script>
+    <script type="module" src="history.js"></script>
 </body>
 </html>
