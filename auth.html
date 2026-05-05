@@ -4,10 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RadioLog - Gateway</title>
-    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="loading-spinner" class="overlay">
+    <div id="loading-spinner" class="overlay" style="display: none;">
         <div class="spinner"></div>
     </div>
 
@@ -19,8 +18,8 @@
             </header>
 
             <div class="tabs">
-                <button id="tab-login" class="active" onclick="switchTab('login')">Log In</button>
-                <button id="tab-signup" onclick="switchTab('signup')">Sign Up</button>
+                <button id="tab-login" class="active">Log In</button>
+                <button id="tab-signup">Sign Up</button>
             </div>
 
             <form id="auth-form">
@@ -48,8 +47,7 @@
             <button id="guest-btn" class="btn-secondary">Continue as Guest</button>
         </div>
     </main>
-    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-auth.js"></script>
-    <script src="app.js"></script>
+
+    <script type="module" src="auth.js"></script>
 </body>
 </html>
