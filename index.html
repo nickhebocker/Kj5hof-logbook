@@ -3,44 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kj5hof Logbook</title>
+    <title>RadioLog - Gateway</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-    <div id="login-container">
-        <div class="login-box">
-            <h2>Owner Login</h2>
-            <input type="text" id="username" placeholder="Username">
-            <input type="password" id="password" placeholder="Password">
-            <button id="login-btn">Login</button>
-            <p id="error-message" style="color: red; display: none; margin-top: 10px;">
-                Invalid username or password.
-            </p>
-        </div>
+    <div id="loading-spinner" class="overlay">
+        <div class="spinner"></div>
     </div>
 
-    <div id="main-content" style="display: none;">
-        <header>
-            <h1>Kj5hof Logbook</h1>
-            <button id="logout-btn">Logout</button>
-        </header>
-        
-        <div id="log-display">
-            <table id="log-table">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Callsign</th>
-                        <th>Frequency</th>
-                        <th>Mode</th>
-                    </tr>
-                </thead>
-                <tbody id="log-body"></tbody>
-            </table>
-        </div>
-    </div>
+    <main class="auth-container">
+        <div class="auth-card">
+            <header>
+                <h1>RadioLog</h1>
+                <p>Amateur Radio Session Manager</p>
+            </header>
 
+            <div class="tabs">
+                <button id="tab-login" class="active" onclick="switchTab('login')">Log In</button>
+                <button id="tab-signup" onclick="switchTab('signup')">Sign Up</button>
+            </div>
+
+            <form id="auth-form">
+                <div class="input-group" id="callsign-group" style="display:none;">
+                    <label>Callsign</label>
+                    <input type="text" id="reg-callsign" placeholder="e.g. K1ABC">
+                </div>
+                <div class="input-group">
+                    <label>Email</label>
+                    <input type="email" id="email" required>
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="password" required>
+                        <button type="button" id="toggle-pw">👁️</button>
+                    </div>
+                </div>
+                <button type="submit" id="submit-btn" class="btn-primary">Authenticate</button>
+                <a href="#" id="reset-pw">Forgot Password?</a>
+            </form>
+
+            <div class="divider"><span>OR</span></div>
+
+            <button id="guest-btn" class="btn-secondary">Continue as Guest</button>
+        </div>
+    </main>
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-auth.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
