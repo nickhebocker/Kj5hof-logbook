@@ -1,61 +1,86 @@
-body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    background-color: #f4f4f9;
+:root {
+    --bg-deep: #0f1115;
+    --card-bg: #1a1d23;
+    --accent-amber: #ffb300;
+    --accent-green: #00e676;
+    --text-main: #e0e0e0;
+    --border: #333;
 }
 
-#login-container {
+body {
+    background-color: var(--bg-deep);
+    color: var(--text-main);
+    font-family: 'Segoe UI', sans-serif;
+    margin: 0;
+}
+
+.mono { font-family: 'Courier New', Courier, monospace; }
+
+/* Auth Card */
+.auth-container {
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
 }
 
-.login-box {
-    background: white;
+.auth-card {
+    background: var(--card-bg);
     padding: 2rem;
     border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    text-align: center;
+    border: 1px solid var(--border);
+    width: 350px;
 }
 
-input {
-    display: block;
+/* Layouts */
+.grid-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    padding: 1rem;
+    height: calc(100vh - 60px);
+}
+
+@media (max-width: 768px) {
+    .grid-container { grid-template-columns: 1fr; }
+    .map-section { order: -1; height: 300px; }
+}
+
+/* UI Elements */
+.input-group { margin-bottom: 1rem; }
+input, select, textarea {
     width: 100%;
-    margin-bottom: 10px;
-    padding: 8px;
+    background: #252932;
+    border: 1px solid var(--border);
+    color: white;
+    padding: 0.8rem;
     box-sizing: border-box;
 }
 
-button {
-    padding: 10px 20px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 4px;
+.btn-primary {
+    background: var(--accent-amber);
+    color: black;
+    font-weight: bold;
     cursor: pointer;
-}
-
-button:hover {
-    background-color: #0056b3;
-}
-
-#main-content {
-    padding: 20px;
-}
-
-table {
+    border: none;
+    padding: 1rem;
     width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
 }
 
-th, td {
-    border: 1px solid #ddd;
-    padding: 12px;
-    text-align: left;
+.btn-amber { background: var(--accent-amber); color: black; }
+
+/* Table */
+table { width: 100%; border-collapse: collapse; }
+th { background: #252932; text-align: left; padding: 1rem; }
+td { padding: 1rem; border-bottom: 1px solid var(--border); }
+
+/* HUD */
+.hud {
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--accent-green);
 }
 
-th {
-    background-color: #f2f2f2;
-}
+#map { height: 100%; width: 100%; border-radius: 4px; }
