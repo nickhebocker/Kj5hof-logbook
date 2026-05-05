@@ -1,73 +1,70 @@
-// Configuration - Change these to your desired credentials
-const OWNER_USER = "admin";
-const OWNER_PASS = "logbook123";
+// Firebase Configuration (Placeholder)
+const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    projectId: "radiolog-id",
+    storageBucket: "radiolog.appspot.com",
+    messagingSenderId: "ID",
+    appId: "APP_ID"
+};
 
-// Element Selectors
-const loginContainer = document.getElementById('login-container');
-const mainContent = document.getElementById('main-content');
-const loginBtn = document.getElementById('login-btn');
-const logoutBtn = document.getElementById('logout-btn');
-const errorMessage = document.getElementById('error-message');
+// State Management
+let currentUser = null;
+let isGuest = localStorage.getItem('isGuest') === 'true';
 
-const usernameInput = document.getElementById('username');
-const passwordInput = document.getElementById('password');
-const logBody = document.getElementById('log-body');
+// HamDB Lookup
+async function lookupCallsign(call) {
+    if (!call) return;
+    try {
+        const response = await fetch(`https://api.hamdb.org/${call}/json/radiolog-app`);
+        const data = await response.json();
+        if (data.hamdb.messages.status === "OK") {
+            const info = data.hamdb.callsign;
+            document.getElementById('remote-info').innerText = `${info.name}, ${info.country}`;
+            updateMap(info.lat, info.poly);
+        }
+    } catch (err) { console.error("HamDB lookup failed"); }
+}
 
-// 1. Login Functionality
-loginBtn.addEventListener('click', () => {
-    const user = usernameInput.value;
-    const pass = passwordInput.value;
+// Coordinate Conversion (Maidenhead to Lat/Long)
+function gridToCoords(grid) {
+    grid = grid.toUpperCase();
+    let lon = (grid.charCodeAt(0) - 65) * 20 - 180 + (grid.charCodeAt(2) - 48) * 2;
+    let lat = (grid.charCodeAt(1) - 65) * 10 - 90 + (grid.charCodeAt(3) - 48) * 1;
+    return [lat + 0.5, lon + 1];
+}
 
-    if (user === OWNER_USER && pass === OWNER_PASS) {
-        // Success
-        errorMessage.style.display = 'none';
-        loginContainer.style.display = 'none';
-        mainContent.style.display = 'block';
-        loadLogData();
+// Persistence Routing
+function saveQSO(qsoData) {
+    if (currentUser) {
+        // db.collection('qsos').add(qsoData);
+        console.log("Saving to Firestore");
     } else {
-        // Failure
-        errorMessage.style.display = 'block';
-        passwordInput.value = ""; // Clear password field on fail
+        const logs = JSON.parse(localStorage.getItem('localLogs') || '[]');
+        logs.push(qsoData);
+        localStorage.setItem('localLogs', JSON.stringify(logs));
     }
-});
-
-// 2. Logout Functionality
-logoutBtn.addEventListener('click', () => {
-    mainContent.style.display = 'none';
-    loginContainer.style.display = 'block';
-    usernameInput.value = "";
-    passwordInput.value = "";
-});
-
-// 3. Data Fetching
-function loadLogData() {
-    fetch('logbook.json')
-        .then(response => {
-            if (!response.ok) {
-                throw new Error("Could not fetch logbook.json");
-            }
-            return response.json();
-        })
-        .then(data => {
-            renderLogs(data);
-        })
-        .catch(error => {
-            console.error("Error loading logs:", error);
-            logBody.innerHTML = "<tr><td colspan='4'>Error loading data.</td></tr>";
-        });
 }
 
-// 4. Render Data to Table
-function renderLogs(logs) {
-    logBody.innerHTML = ""; // Clear existing
-    logs.forEach(entry => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${entry.date || 'N/A'}</td>
-            <td>${entry.callsign || 'N/A'}</td>
-            <td>${entry.frequency || 'N/A'}</td>
-            <td>${entry.mode || 'N/A'}</td>
-        `;
-        logBody.appendChild(row);
-    });
+// UI Event Listeners
+document.getElementById('target-call')?.addEventListener('blur', (e) => {
+    lookupCallsign(e.target.value);
+});
+
+// Sync Utility
+function syncLocalToCloud() {
+    const local = JSON.parse(localStorage.getItem('localLogs') || '[]');
+    if (local.length > 0 && currentUser) {
+        // Migration logic...
+        localStorage.removeItem('localLogs');
+    }
 }
+
+// Map Initialization (Placeholder)
+function initMap() {
+    const mapElement = document.getElementById('map');
+    if (!mapElement) return;
+    const map = L.map('map').setView([20, 0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+}
+
+document.addEventListener('DOMContentLoaded', initMap);
