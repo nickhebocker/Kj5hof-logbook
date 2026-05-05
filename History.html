@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archives - RadioLog</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="history-layout">
+    <header class="hud">
+        <h1>Archives</h1>
+        <nav>
+            <a href="main.html">Log</a>
+            <a href="history.html" class="active">History</a>
+        </nav>
+    </header>
+
+    <div class="toolbar">
+        <input type="text" id="search-bar" placeholder="Filter by Callsign/Date...">
+        <div class="actions">
+            <button id="sync-btn" class="btn-amber hidden">Sync to Cloud</button>
+            <button onclick="exportADIF()">Export ADIF</button>
+            <button onclick="exportCSV()">Export CSV</button>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table id="qso-table">
+            <thead>
+                <tr>
+                    <th>Date/Time (UTC)</th>
+                    <th>Callsign</th>
+                    <th>Freq</th>
+                    <th>Mode</th>
+                    <th>Sent/Rcv</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="qso-body">
+                </tbody>
+        </table>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
